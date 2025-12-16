@@ -1,7 +1,9 @@
+# Using Caddy
+
 https://github.com/caddyserver/caddy/releases/tag/v2.10.2
 
 Caddy cool server for doing HTTPs and works without me having to create CA. Also can set CSP headers.
-Indstalled with choclaty.
+Installed with choclaty.
 
 Need to remove the certificate afterwards.
 
@@ -25,3 +27,7 @@ https://medium.com/@krishnachirumamilla/content-security-policy-worker-src-cd06e
 
 caddy run
 
+Open: https://localhost:8443 
+
+
+There is also https://localhost:9443 from which "cross origin" scripts are loaded
