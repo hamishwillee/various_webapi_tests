@@ -16,8 +16,6 @@ https://localhost:8443 {
     header @jsFiles Content-Type "text/javascript; charset=utf-16"
 
 
-
-
     #header Access-Control-Allow-Origin "https://localhost:8443"
 
     #header Access-Control-Allow-Origin "*"

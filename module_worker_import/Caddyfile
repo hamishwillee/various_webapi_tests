@@ -6,7 +6,7 @@ https://localhost:8443 {
     #header Cross-Origin-Opener-Policy "same-origin"
 
 
-    header Content-Security-Policy "worker-src 'self' https://localhost:9443"
+    #header Content-Security-Policy "worker-src 'self' https://localhost:9443"
     # header Content-Security-Policy "worker-src 'self'"  # Blocks load from other
 
     # Ensure JS files are served with correct MIME type

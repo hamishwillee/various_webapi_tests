@@ -1,91 +1,203 @@
 <!DOCTYPE html>
 <html>
-<body>
-<h1>Modules Worker Test</h1>
+  <body>
+    <h1>Modules Worker Test</h1>
 
-<script>
+    <script>
+      /*
+      // Open a module worker in same origin
+      (async () => {
+        document.body.insertAdjacentHTML(
+          "beforeend",
+          `<p>TEST1: same-origin module - no import</p>`
+        );
+        try {
+          const worker = new Worker("https://localhost:8443/worker_module.js", {
+            type: "module",
+          });
+          document.body.insertAdjacentHTML(
+            "beforeend",
+            `<p>TEST1: import didn't leave</p>`
+          );
+          worker.onmessage = (e) => {
+            console.log("M:", e.data);
+            document.body.insertAdjacentHTML(
+              "beforeend",
+              `<p>so mod no imp: ${e.data}</p>`
+            );
+          };
 
-// Open a module worker in same origin
-(async () => {
-  document.body.insertAdjacentHTML("beforeend", `<p>TEST1: same-origin module - no import</p>`);
-  try {
-    const worker = new Worker("https://localhost:8443/worker_module.js", { type: "module" });
-    worker.onmessage = (e) => {
-      console.log("M:", e.data);
-      document.body.insertAdjacentHTML("beforeend", `<p>so mod no imp: ${e.data}</p>`);
-    };
-    worker.postMessage("Hello module worker no import!");
-  } catch (e) {
-    console.error("module local Worker failed to load:", e);
-    document.body.insertAdjacentHTML("beforeend", `<p>Fail to load: so module worker - worker_module.js</p>`);
-  }
-})();
+          worker.onerror = (error) => {
+            console.error("TEST1: onError:", error.message);
+            console.error("TEST1: onError:", error);
+            document.body.insertAdjacentHTML(
+              "beforeend",
+              `<p>TEST1: onError: ${error.type}</p>`
+            );
+          };
 
+          worker.postMessage("TEST1: Hello module worker no import!");
+        } catch (e) {
+          console.error("TEST1: module local Worker failed to load:", e);
+          document.body.insertAdjacentHTML(
+            "beforeend",
+            `<p>TEST1: Fail to load: so module worker - worker_module.js</p>`
+          );
+        }
+      })();
+      */
 
-/*
+      // Open a cross origin module worker 
+      /*
+      (async () => {
+        document.body.insertAdjacentHTML(
+          "beforeend",
+          `<p>TEST2B: cross-origin module - no import</p>`
+        );
+        try {
+          const worker = new Worker(
+            "https://localhost:9443/worker_module_co.js", // doesn't work because you can't do this cross origin.
+            {
+              type: "module",
+            }
+          );
+          worker.onmessage = (e) => {
+            console.log("M: co mod no imp:", e.data);
+            document.body.insertAdjacentHTML(
+              "beforeend",
+              `<p>CO module: ${e.data}</p>`
+            );
+          };
 
-// Open a cross origin module worker
-(async () => {
-  document.body.insertAdjacentHTML("beforeend", `<p>TEST2: cross-origin module - no import</p>`);
-  try {
-    const worker = new Worker("https://localhost:9443/worker_module.js", { type: "module" });
-    worker.onmessage = (e) => {
-      console.log("M: co mod no imp:", e.data);
-      document.body.insertAdjacentHTML("beforeend", `<p>CO module: ${e.data}</p>`);
-    };
-    worker.postMessage("Hello worker!");
-  } catch (e) {
-    console.error("FAIL: Worker module cross origin failed to load:", e);
-    document.body.insertAdjacentHTML("beforeend", `<p>Fail to load: co mo no imp module worker</p>`);
-  }
-})();
+          worker.onerror = (error) => {
+            console.error("TEST2B: onError:", error.message);
+            console.error("TEST2B: onError:", error);
+            document.body.insertAdjacentHTML(
+              "beforeend",
+              `<p>TEST2B: onError: ${error.type}</p>`
+            );
+          };
 
+          worker.postMessage("Hello TEST2B!");
+        } catch (e) {
+          console.error(
+            "TEST2: FAIL: Worker module cross origin failed to load:",
+            e
+          );
+          document.body.insertAdjacentHTML(
+            "beforeend",
+            `<p>Fail to load: co mo no imp module worker</p>`
+          );
+        }
+      })();
 */
 
+// Way that works - creating a blob.
+      async function loadWorker() {
+        const response = await fetch(
+          "https://localhost:9443/worker_module_co.js"
+        );
+        const script = await response.text();
 
-/*
+        // Create a local URL that points to the code string
+        const blob = new Blob([script], { type: "application/javascript" });
+        const workerUrl = URL.createObjectURL(blob);
 
-// Open a module worker in same origin that then imports something in same origin
-(async () => {
-  document.body.insertAdjacentHTML("beforeend", `<p>TEST3: SO module - import SO</p>`);
-  try {
-    const worker = new Worker("./worker_module_so.js", { type: "module" });
+        try {
+          // Now the URL is "same-origin" with 8443!
+          const worker = new Worker(workerUrl, { type: "module" });
 
-    worker.onmessage = (e) => {
-      console.log("M: :", e.data);
-      document.body.insertAdjacentHTML("beforeend", `<p>worker_module_so: ${e.data}</p>`);
-    };
-    worker.postMessage("Hello worker!");
-  } catch (e) {
-    console.error("worker_module_so failed to load:", e);
-    document.body.insertAdjacentHTML("beforeend", `<p>Fail to load: worker_module_so</p>`);
+          worker.onmessage = (e) => {
+            console.log("M: co mod no imp:", e.data);
+            document.body.insertAdjacentHTML(
+              "beforeend",
+              `<p>CO module: ${e.data}</p>`
+            );
+          };
 
-  }
-})();
+          worker.onerror = (error) => {
+            console.error("TEST2B: onError:", error.message);
+            console.error("TEST2B: onError:", error);
+            document.body.insertAdjacentHTML(
+              "beforeend",
+              `<p>TEST2B: onError: ${error.type}</p>`
+            );
+          };
 
-*/
+          worker.postMessage("Hello TEST2B!");
+        } catch (e) {
+          console.error(
+            "TEST2B: FAIL: Worker module cross origin failed to load:",
+            e
+          );
+          document.body.insertAdjacentHTML(
+            "beforeend",
+            `<p>FTEST2Bail to load: co mo no imp module worker</p>`
+          );
+        }
+      }
+      loadWorker();
 
+      /*
 
-// Open a module worker in same origin that then imports something in cross origin
-(async () => {
-  document.body.insertAdjacentHTML("beforeend", `<p>TEST4: SO module - import CO</p>`);
-  try {
-    const worker = new Worker("https://localhost:8443/worker_module_co.js", { type: "module" });
-    worker.onmessage = (e) => {
-      console.log("M:", e.data);
-      document.body.insertAdjacentHTML("beforeend", `<p>worker_module_co: ${e.data}</p>`);
-    };
-    worker.postMessage("Hello worker!");
-  } catch (e) {
-    console.error("worker_module_importer_co failed to load:", e);
-    document.body.insertAdjacentHTML("beforeend", `<p>Fail to load: worker_module_co</p>`);
+      // Open a module worker in same origin that then imports something in same origin
+      (async () => {
+        document.body.insertAdjacentHTML("beforeend", `<p>TEST3: SO module - import SO</p>`);
+        try {
+          const worker = new Worker("./worker_module_so.js", { type: "module" });
 
-  }
-})();
+          worker.onmessage = (e) => {
+            console.log("M: :", e.data);
+            document.body.insertAdjacentHTML("beforeend", `<p>worker_module_so: ${e.data}</p>`);
+          };
+          worker.postMessage("Hello worker!");
+        } catch (e) {
+          console.error("worker_module_so failed to load:", e);
+          document.body.insertAdjacentHTML("beforeend", `<p>Fail to load: worker_module_so</p>`);
 
+        }
+      })();
 
+      */
 
+      /*
+      // Open a module worker in same origin that then imports something in cross origin
+      (async () => {
+        document.body.insertAdjacentHTML("beforeend", `<p>TEST4: SO module - import CO</p>`);
+        try {
+          const worker = new Worker("https://localhost:8443/worker_module_co.js", { type: "module" });
+          worker.onmessage = (e) => {
+            console.log("M:", e.data);
+            document.body.insertAdjacentHTML("beforeend", `<p>worker_module_co: ${e.data}</p>`);
+          };
+          worker.postMessage("Hello worker!");
+        } catch (e) {
+          console.error("worker_module_importer_co failed to load:", e);
+          document.body.insertAdjacentHTML("beforeend", `<p>Fail to load: worker_module_co</p>`);
 
-</script>
-</body>
+        }
+      })();
+
+      */
+
+      // Open a module worker in same origin that then imports something in cross origin
+      /*
+      (async () => {
+        document.body.insertAdjacentHTML("beforeend", `<p>TEST5: CO module - import CO</p>`);
+        try {
+          const worker = new Worker("https://localhost:9443/worker_module_co.js", { type: "module" });
+          worker.onmessage = (e) => {
+            console.log("M:", e.data);
+            document.body.insertAdjacentHTML("beforeend", `<p>worker_module_co: ${e.data}</p>`);
+          };
+          worker.postMessage("Hello worker!");
+        } catch (e) {
+          console.error("worker_module_importer_co failed to load:", e);
+          document.body.insertAdjacentHTML("beforeend", `<p>Fail to load: worker_module_co</p>`);
+
+        }
+      })();
+      */
+    </script>
+  </body>
 </html>
