@@ -1,0 +1,20 @@
+https://localhost:8443 {
+    root * ./origin8443
+    file_server
+
+    header Permissions-Policy "fullscreen=(self)"  # Allow in self - which should allow everywhere
+    #header Permissions-Policy "fullscreen=(self \"https://localhost:9443/\")"
+    #header Permissions-Policy "fullscreen=(\"https://localhost:9443/\")"  # Don't allow in parent
+}
+
+https://localhost:9443 {
+    root * ./origin9443
+    file_server
+
+
+    # CORS (NOT required for classic modules. )
+    #header Access-Control-Allow-Origin "https://localhost:8443"
+    #header Access-Control-Allow-Methods "GET, OPTIONS"
+}
+
+#Content-Security-Policy: worker-src 'self' https://example.com

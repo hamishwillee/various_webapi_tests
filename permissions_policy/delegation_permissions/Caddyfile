@@ -1,0 +1,9 @@
+https://localhost:8443 {
+    root * ./origin8443
+    file_server
+}
+
+https://localhost:9443 {
+    root * ./origin9443
+    file_server
+}
