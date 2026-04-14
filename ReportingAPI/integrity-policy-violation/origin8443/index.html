@@ -1,0 +1,46 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Reporting API: integrity-policy-violation Test Page</title>
+    <style>
+      #report-display {
+        background: #f4f4f4;
+        border: 1px solid #ccc;
+        padding: 10px;
+        white-space: pre-wrap;
+        font-family: monospace;
+        color: #d32f2f;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1>Reporting API: integrity-policy-violation Test Page</h1>
+    <p>Status: Check the box below and the console for violation reports.</p>
+    <hr />
+    <div id="report-display">Waiting for reports...</div>
+    <hr />
+
+    <script>
+      const display = document.getElementById('report-display');
+
+      const options = {
+        types: ['integrity-violation'],
+        buffered: true,
+      };
+
+      const observer = new ReportingObserver((reports, observer) => {
+        reports.forEach((violation) => {
+          console.log(violation);
+          display.innerText = JSON.stringify(violation, null, 2);
+        });
+      }, options);
+
+      // 2. Start observing
+      observer.observe();
+    </script>
+
+    <!-- Trigger integrity policy violation -->
+    <script src="https://example.com/example-framework.js" crossorigin="anonymous"></script>
+  </body>
+</html>

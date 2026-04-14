@@ -1,0 +1,88 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Reporting API: Intervention Test</title>
+    <style>
+      #log {
+        background: #f4f4f4;
+        border: 1px solid #ccc;
+        padding: 10px;
+        white-space: pre-wrap;
+        font-family: monospace;
+      }
+      .report {
+        color: darkgreen;
+        font-weight: bold;
+      }
+      .blocked {
+        color: darkorange;
+      }
+      .allowed {
+        color: red;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Reporting API: Intervention Test</h1>
+    <p>Open DevTools → Console. Reports appear below when the intervention fires.</p>
+    <div id="log"></div>
+
+    <script>
+      const logEl = document.getElementById('log');
+      function addLog(msg, cls) {
+        const span = document.createElement('span');
+        if (cls) span.className = cls;
+        span.textContent = msg + '\n';
+        logEl.appendChild(span);
+      }
+
+      // Register observer BEFORE triggering, with buffered:true as safety net.
+      if (!('ReportingObserver' in window)) {
+        addLog('ERROR: ReportingObserver not supported — use Chrome 69+.', 'allowed');
+      } else {
+        const observer = new ReportingObserver(
+          (reports) => {
+            for (const report of reports) {
+              addLog('=== INTERVENTION REPORT ===', 'report');
+              addLog(JSON.stringify(report.toJSON(), null, 2), 'report');
+              console.log('Intervention report:', report.toJSON());
+            }
+          },
+          { types: ['intervention'], buffered: true },
+        );
+        observer.observe();
+        addLog('ReportingObserver registered.');
+      }
+    </script>
+
+    <!--
+      TRIGGER: <audio autoplay> without muted.
+      Chrome's autoplay policy blocks unmuted audio without a prior user gesture
+      and generates an "intervention" report — exactly what ReportingObserver watches for.
+      The data URI is a valid minimal WAV so there is no network request.
+    -->
+    <audio
+      id="aud"
+      autoplay
+      src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA="
+    ></audio>
+
+    <script>
+      document
+        .getElementById('aud')
+        .play()
+        .then(() =>
+          addLog(
+            'Autoplay ALLOWED — no intervention. Try in a fresh profile or Incognito.',
+            'allowed',
+          ),
+        )
+        .catch((e) =>
+          addLog(
+            'Autoplay BLOCKED: ' + e.message + '\nIntervention report should appear above.',
+            'blocked',
+          ),
+        );
+    </script>
+  </body>
+</html>

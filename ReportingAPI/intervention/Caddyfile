@@ -1,0 +1,11 @@
+https://localhost:8443 {
+    root * ./origin8443
+    file_server
+
+    #header Permissions-Policy "geolocation=()"
+    header Reporting-Endpoints "default=\"/report-handler\""
+
+
+    # Route that path to your Node app running on 3000
+    reverse_proxy /report-handler localhost:3000
+}

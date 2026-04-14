@@ -1,0 +1,14 @@
+{
+  "scripts": {
+    "format": "prettier --write \"**/*.js\" \"**/*.html\"",
+    "start:coep": "echo Open: https://localhost:8443 && concurrently \"node report-server.js\" \"cd coep && caddy run\"",
+    "start:deprecation": "echo Open: https://localhost:8443 && concurrently \"node report-server.js\" \"cd deprecation && caddy run\"",
+    "start:integrity": "echo Open: https://localhost:8443 && concurrently \"node report-server.js\" \"cd integrity-policy-violation && caddy run\"",
+    "start:intervention": "echo Open: https://localhost:8443 && concurrently \"node report-server.js\" \"cd intervention && caddy run\"",
+    "start:permissions": "echo Open: https://localhost:8443 && concurrently \"node report-server.js\" \"cd permissions-policy-violation && caddy run\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0",
+    "prettier": "^3.8.2"
+  }
+}

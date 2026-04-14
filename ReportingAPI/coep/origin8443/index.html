@@ -1,0 +1,63 @@
+<!doctype html>
+<html>
+  <head>
+    <title>COEP Test Page</title>
+    <style>
+      #report-display {
+        background: #f4f4f4;
+        border: 1px solid #ccc;
+        padding: 10px;
+        white-space: pre-wrap;
+        font-family: monospace;
+        color: #d32f2f;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>COEP Test Page</h1>
+    <p>Status: Check the box below and the console for violation reports.</p>
+    <hr />
+    <div id="report-display">Waiting for reports...</div>
+    <hr />
+
+    <!-- <img src="https://www.wikipedia.org/static/images/project-logos/enwiki.png"  />   -->
+    <!-- <img src="https://localhost:9443/enwiki.png" /> -->
+    <!--  <img crossorigin="" src="https://localhost:9443/enwiki.png" />   -->
+    <!-- <img id="test-image" src="https://localhost:9443/enwiki.png" crossorigin="anonymous" /> -->
+
+    <img id="test-image" src="https://localhost:9443/enwiki.png" />
+
+    <iframe src="https://localhost:9443/index.html"></iframe>
+
+    <script>
+      const display = document.getElementById('report-display');
+
+      // 1. Create the observer
+      const observer = new ReportingObserver(
+        (reports, observer) => {
+          reports.forEach((report) => {
+            // Log to the browser console
+            console.log('COEP Violation Detected:', report.type, report.body);
+            console.log(report);
+            console.log(report.body);
+            console.log(typeof report.body);
+            // Log to the page UI
+            const reportInfo = {
+              type: report.type,
+              url: report.url,
+              blockedURL: report.body.blockedURL,
+              type: report.body.type, // e.g., "corp"
+            };
+
+            //display.innerText = JSON.stringify(reportInfo, null, 2);
+            display.innerText = JSON.stringify(report, null, 2);
+          });
+        },
+        { buffered: true },
+      ); // 'buffered: true' catches reports that happened before the script ran
+
+      // 2. Start observing
+      observer.observe();
+    </script>
+  </body>
+</html>

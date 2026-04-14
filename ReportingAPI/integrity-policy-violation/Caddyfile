@@ -1,0 +1,12 @@
+https://localhost:8443 {
+    root * ./origin8443
+    file_server
+
+    #Integrity-Policy: blocked-destinations=(<destination>),sources=(<source>),endpoints=(<endpoint>)
+    header Integrity-Policy "blocked-destinations=(script),endpoints=(integrity-endpoint)"
+    header Reporting-Endpoints "integrity-endpoint=\"/report-handler\""
+
+
+    # Route that path to your Node app running on 3000
+    reverse_proxy /report-handler localhost:3000
+}

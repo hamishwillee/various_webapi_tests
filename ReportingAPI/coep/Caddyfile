@@ -1,0 +1,26 @@
+https://localhost:8443 {
+    root * ./origin8443
+    file_server
+
+    # Use a relative-looking path on the SAME port
+    header Reporting-Endpoints "main-endpoint=\"/report-handler\""
+    header Cross-Origin-Embedder-Policy "require-corp; report-to=\"main-endpoint\""
+
+    # Route that path to your Node app running on 3000
+    reverse_proxy /report-handler localhost:3000
+}
+
+
+https://localhost:9443 {
+    root * ./origin9443
+    file_server
+
+    # Enable this to allow request cross origin via CORP
+    # header Cross-Origin-Resource-Policy "cross-origin" # explicitly allow cross-origin access
+    header Cross-Origin-Resource-Policy "same-origin" # Blocked, because origins are different
+    # header Cross-Origin-Resource-Policy "same-site" # Allowed because both origins are same-site
+    
+    # Enable this to allow request via CORS
+    #header Access-Control-Allow-Origin "https://localhost:8443"
+
+}

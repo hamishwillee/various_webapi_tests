@@ -1,0 +1,69 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Reporting API: Deprecation Test</title>
+    <style>
+      #log {
+        background: #f4f4f4;
+        border: 1px solid #ccc;
+        padding: 10px;
+        white-space: pre-wrap;
+        font-family: monospace;
+      }
+      .report {
+        color: darkgreen;
+        font-weight: bold;
+      }
+      .pending {
+        color: darkorange;
+      }
+      .error {
+        color: red;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Reporting API: Deprecation Test</h1>
+    <p>
+      A synchronous XHR is made on page load — a deprecated API. No interaction or navigation
+      needed.
+    </p>
+    <div id="log"></div>
+
+    <script>
+      const logEl = document.getElementById('log');
+      function addLog(msg, cls) {
+        const span = document.createElement('span');
+        if (cls) span.className = cls;
+        span.textContent = msg + '\n';
+        logEl.appendChild(span);
+      }
+
+      if (!('ReportingObserver' in window)) {
+        addLog('ERROR: ReportingObserver not supported — use Chrome 69+.', 'error');
+      } else {
+        const observer = new ReportingObserver(
+          (reports) => {
+            for (const r of reports) {
+              addLog('=== DEPRECATION REPORT ===', 'report');
+              addLog(JSON.stringify(r.toJSON(), null, 2), 'report');
+              console.log('Deprecation report:', r.toJSON());
+            }
+          },
+          { types: ['deprecation'], buffered: true },
+        );
+        observer.observe();
+        addLog('ReportingObserver registered.');
+      }
+
+      // Trigger: synchronous XHR is a deprecated API.
+      // Chrome fires a deprecation report immediately when xhr.send() is called.
+      // report.body.id === "XMLHttpRequestSynchronousInNonWorkerOutsideBeforeUnload"
+      addLog('Sending synchronous XHR...', 'pending');
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', '/', false); // false = synchronous (deprecated)
+      xhr.send();
+      addLog('XHR complete (status ' + xhr.status + '). Deprecation report should appear above.');
+    </script>
+  </body>
+</html>
