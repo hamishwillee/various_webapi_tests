@@ -1,0 +1,49 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Reporting API: permissions-policy-violation Test Page</title>
+    <style>
+      #report-display {
+        background: #f4f4f4;
+        border: 1px solid #ccc;
+        padding: 10px;
+        white-space: pre-wrap;
+        font-family: monospace;
+        color: #d32f2f;
+      }
+    </style>
+    <meta http-equiv="Permissions-Policy" content="geolocation=()" />
+  </head>
+
+  <body>
+    <h1>Reporting API: permissions-policy-violation Test Page</h1>
+    <p>Status: Check the box below and the console for violation reports.</p>
+    <hr />
+    <div id="report-display">Waiting for reports...</div>
+    <hr />
+
+    <script>
+      const display = document.getElementById('report-display');
+
+      const options = {
+        types: ['permissions-policy-violation'],
+        buffered: true,
+      };
+
+      const observer = new ReportingObserver((reports, observer) => {
+        const firstReport = reports[0];
+        display.innerText = JSON.stringify(firstReport, null, 2);
+        console.log(firstReport);
+      }, options);
+
+      // 2. Start observing
+      observer.observe();
+
+      //3. Trigger intervention report by doing forbidden task
+      navigator.geolocation.getCurrentPosition(
+        () => {},
+        () => {},
+      );
+    </script>
+  </body>
+</html>
