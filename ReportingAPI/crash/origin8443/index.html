@@ -1,0 +1,233 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Reporting API: Crash Test</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        max-width: 750px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+      }
+      section {
+        margin-bottom: 2rem;
+      }
+      h2 {
+        border-bottom: 1px solid #ccc;
+        padding-bottom: 0.25rem;
+      }
+      .note {
+        background: #fff8e1;
+        border-left: 4px solid #f9a825;
+        padding: 0.75rem 1rem;
+        margin: 1rem 0;
+      }
+      .info {
+        background: #e3f2fd;
+        border-left: 4px solid #1976d2;
+        padding: 0.75rem 1rem;
+        margin: 1rem 0;
+      }
+      button {
+        padding: 0.5rem 1.25rem;
+        font-size: 1rem;
+        cursor: pointer;
+        margin-right: 0.5rem;
+        margin-bottom: 0.5rem;
+      }
+      button.danger {
+        background: #d32f2f;
+        color: white;
+        border: none;
+        border-radius: 4px;
+      }
+      button.danger:hover {
+        background: #b71c1c;
+      }
+      button.primary {
+        background: #1976d2;
+        color: white;
+        border: none;
+        border-radius: 4px;
+      }
+      button.primary:hover {
+        background: #0d47a1;
+      }
+      input[type='text'] {
+        padding: 0.4rem;
+        font-size: 0.95rem;
+        width: 200px;
+        margin-right: 0.5rem;
+      }
+      #context-status {
+        font-style: italic;
+        color: #555;
+        margin-top: 0.5rem;
+      }
+      #log {
+        background: #f4f4f4;
+        border: 1px solid #ccc;
+        padding: 10px;
+        white-space: pre-wrap;
+        font-family: monospace;
+        min-height: 2rem;
+      }
+      .ok {
+        color: darkgreen;
+        font-weight: bold;
+      }
+      .warn {
+        color: darkorange;
+      }
+      .error {
+        color: red;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Reporting API: Crash Test</h1>
+
+    <div class="info">
+      <strong>Crash reports are server-side only.</strong> Unlike other report types,
+      <code>CrashReport</code> cannot be observed with <code>ReportingObserver</code> — the
+      JavaScript runtime is gone by the time the report is generated. Reports are queued by the
+      browser and POSTed to <code>/report-handler</code> after the tab recovers or you navigate
+      back. Watch the <strong>report-server terminal</strong> for incoming reports.
+      <br /><br />
+      <ul style="margin: 0.25rem 0 0 1.25rem; padding: 0;">
+        <li>Firefox supports crash reports since FF130, but this test cannot trigger them. As of FF150 the <code>window.crashReport</code> interface is not supported.</li>
+        <li>The page-unresponsive test works on Chrome only.</li>
+        <li>OOM tests not supported — attempts to allocate memory normally and via WASM are handled without crashing.</li>
+        <li>Address bar crash URLs such as <code>chrome://kill</code> (Chrome) and <code>about:crashcontent</code> (Firefox) do not trigger crash reports.</li>
+      </ul>
+    </div>
+
+    <!-- ── Section 1: CrashReportContext ─────────────────────────── -->
+    <section>
+      <h2>1. Set crash report context (optional)</h2>
+      <p>
+        <code>window.crashReport</code> lets you attach custom key/value pairs that appear in the
+        crash report body. Call <code>initialize(maxBytes)</code> first (async), then
+        <code>set(key, value)</code> before triggering the crash.
+      </p>
+      <label>Key: <input type="text" id="ctx-key" value="test-scenario" /></label>
+      <label>Value: <input type="text" id="ctx-value" value="unresponsive-trigger" /></label>
+      <br />
+      <button class="primary" onclick="setContext()">Initialize and set context</button>
+      <div id="context-status"></div>
+    </section>
+
+    <!-- ── Section 2: Trigger crash ──────────────────────────────── -->
+    <section>
+      <h2>2. Trigger a crash</h2>
+      <div class="note">
+        <strong>Warning:</strong> The button and address-bar methods below will crash this tab.
+        Keep the report-server terminal visible so you can see the report arrive after you reload.
+      </div>
+
+      <h3>Via JavaScript</h3>
+      <button class="danger" onclick="triggerUnresponsive()">Force unresponsive</button>
+      <p>
+        Freezes the main thread. The browser will show a "Page Unresponsive" or similar dialog
+        after several seconds. <strong>Kill</strong> the tab (not "Stop" or "Wait") to generate
+        the crash report with <code>reason: "unresponsive"</code>.
+      </p>
+
+<div id="log"></div>
+    </section>
+
+    <!-- ── Section 3: What to expect ─────────────────────────────── -->
+    <section>
+      <h2>3. What to expect in the server log</h2>
+      <p>
+        After the tab crashes, reload this page (or navigate away and back). The browser will
+        then deliver the queued crash report to the server. Look for something like:
+      </p>
+      <pre><code>[
+  {
+    "age": 5,
+    "type": "crash",
+    "url": "https://localhost:8443/",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36",
+    "body": {
+      "crash_report_api": {
+        "test-scenario": "unresponsive-trigger"
+      },
+      "is_top_level": true,
+      "reason": "unresponsive",
+      "stack": "Website owner has not opted in for JS call stacks in crash reports.",
+      "visibility_state": "visible"
+    }
+  }
+]</code></pre>
+      <p>
+        Crash report delivery can be delayed — the browser batches reports and may not send them
+        immediately on reload. If nothing arrives, wait a few seconds or navigate to another page
+        on the same origin and back.
+      </p>
+    </section>
+
+    <script>
+      const logEl = document.getElementById('log');
+      function addLog(msg, cls) {
+        const span = document.createElement('span');
+        if (cls) span.className = cls;
+        span.textContent = msg + '\n';
+        logEl.appendChild(span);
+      }
+
+      // ── window.crashReport context ────────────────────────────────
+      async function setContext() {
+        const key = document.getElementById('ctx-key').value.trim();
+        const value = document.getElementById('ctx-value').value.trim();
+        const statusEl = document.getElementById('context-status');
+
+        if (!key) {
+          statusEl.textContent = 'Key must not be empty.';
+          statusEl.style.color = 'red';
+          return;
+        }
+
+        if (!window.crashReport) {
+          statusEl.textContent = 'window.crashReport is not supported in this browser.';
+          statusEl.style.color = 'red';
+          return;
+        }
+
+        try {
+          await window.crashReport.initialize(1024);
+          window.crashReport.set(key, value);
+          statusEl.textContent = `Set: "${key}" = "${value}"`;
+          statusEl.style.color = 'darkgreen';
+        } catch (e) {
+          // initialize() throws InvalidStateError if already called — that's fine, just set.
+          if (e.name === 'InvalidStateError') {
+            try {
+              window.crashReport.set(key, value);
+              statusEl.textContent = `Set: "${key}" = "${value}" (already initialized)`;
+              statusEl.style.color = 'darkgreen';
+            } catch (e2) {
+              statusEl.textContent = 'Error calling set(): ' + e2.message;
+              statusEl.style.color = 'red';
+            }
+          } else {
+            statusEl.textContent = 'Error: ' + e.message;
+            statusEl.style.color = 'red';
+          }
+        }
+      }
+
+      // ── Unresponsive trigger ──────────────────────────────────────
+      function triggerUnresponsive() {
+        addLog('Freezing the main thread…', 'warn');
+        addLog('Kill the tab (not "Stop" or "Wait") when the browser dialog appears.', 'warn');
+        // Use setTimeout so the log update is painted before we freeze.
+        setTimeout(() => {
+          // Infinite synchronous loop — renderer stops responding to the browser's ping.
+          // eslint-disable-next-line no-constant-condition
+          while (true) {}
+        }, 200);
+      }
+    </script>
+  </body>
+</html>
