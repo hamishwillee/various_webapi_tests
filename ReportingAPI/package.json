@@ -5,7 +5,8 @@
     "start:deprecation": "echo Open: https://localhost:8443 && concurrently \"node report-server.js\" \"cd deprecation && caddy run\"",
     "start:integrity": "echo Open: https://localhost:8443 && concurrently \"node report-server.js\" \"cd integrity-policy-violation && caddy run\"",
     "start:intervention": "echo Open: https://localhost:8443 && concurrently \"node report-server.js\" \"cd intervention && caddy run\"",
-    "start:permissions": "echo Open: https://localhost:8443 && concurrently \"node report-server.js\" \"cd permissions-policy-violation && caddy run\""
+    "start:permissions": "echo Open: https://localhost:8443 && concurrently \"node report-server.js\" \"cd permissions-policy-violation && caddy run\"",
+    "start:crash": "echo Open: https://localhost:8443 && concurrently \"node report-server.js\" \"cd crash && caddy run\""
   },
   "devDependencies": {
     "concurrently": "^9.0.0",
