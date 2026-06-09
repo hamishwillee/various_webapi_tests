@@ -1,0 +1,9 @@
+https://localhost:8443 {
+    root * ./origin8443
+    file_server
+
+    header Document-Policy "js-profiling=?0, lossless-images-max-bpp=0.0001, force-load-at-top=?1, report-to=docpolicyendpt"
+    header Reporting-Endpoints "docpolicyendpt=\"/report-handler\""
+
+    reverse_proxy /report-handler localhost:3000
+}

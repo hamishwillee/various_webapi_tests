@@ -9,6 +9,7 @@ Manual tests and demos for the [Reporting API](https://developer.mozilla.org/en-
 | [coep/](coep/README.md) | COEP / CORP violations (cross-origin embedder + resource policy) |
 | [crash/](crash/) | Crash reports (tab kill / unresponsive) |
 | [deprecation/](deprecation/README.md) | Deprecated API usage (e.g. synchronous XHR) |
+| [document-policy/](document-policy/) | Document-Policy violations (e.g. JS Self-Profiling API blocked) |
 | [integrity-policy-violation/](integrity-policy-violation/README.md) | SRI / Integrity-Policy violations |
 | [intervention/](intervention/README.md) | Browser intervention reports (e.g. blocked `document.write`) |
 | [permissions-policy-violation/](permissions-policy-violation/README.md) | Permissions-Policy violations (e.g. blocked geolocation) |
@@ -26,7 +27,7 @@ npm install
 Then run any test with a single command from this directory:
 
 ```sh
-npm run start:deprecation       # or: start:coep, start:crash, start:intervention, start:permissions, start:integrity
+npm run start:deprecation       # or: start:coep, start:crash, start:document-policy, start:intervention, start:permissions, start:integrity
 ```
 
 The prompt you used to start the process displays the server report.

@@ -1,0 +1,22 @@
+https://localhost:8443 {
+    root * ./origin8443
+    file_server
+
+    header Reporting-Endpoints "coop-endpoint=\"/report-handler\""
+
+    # Report-only mode: does NOT sever the BCG; opener retains window access.
+    # Navigation violations → endpoint only. Property access violations → also ReportingObserver.
+    header Cross-Origin-Opener-Policy-Report-Only "same-origin; report-to=\"coop-endpoint\""
+
+    # Enforce mode: severs the BCG. Property access via the proxy returns closed=true.
+    # Navigation violations → endpoint only. Property access violations → NOT generated (proxy is detached).
+    # header Cross-Origin-Opener-Policy "same-origin; report-to=\"coop-endpoint\""
+
+    reverse_proxy /report-handler localhost:3000
+}
+
+https://localhost:9443 {
+    root * ./origin9443
+    file_server
+    # No COOP header; defaults to unsafe-none — incompatible with same-origin
+}

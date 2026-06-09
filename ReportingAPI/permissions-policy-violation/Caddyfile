@@ -2,10 +2,11 @@ https://localhost:8443 {
     root * ./origin8443
     file_server
 
-    header Permissions-Policy "geolocation=()"
-    header Reporting-Endpoints "default=\"/report-handler\""
+    #header Permissions-Policy "geolocation=();report-to=geo_endpoint" # With specific endpoint for geolocation
+    #header Reporting-Endpoints "geo_endpoint=\"/report-handler\""
 
-    # can also have report to
+    header Permissions-Policy-Report-Only "geolocation=()" # Default endpoint
+    header Reporting-Endpoints "default=\"/report-handler\""  # Works
 
     # Route that path to your Node app running on 3000
     reverse_proxy /report-handler localhost:3000

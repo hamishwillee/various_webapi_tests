@@ -1,0 +1,16 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Cross-Origin Target (COOP test)</title>
+  </head>
+  <body>
+    <h1>Cross-Origin Target</h1>
+    <p>
+      This page is served from <code>https://localhost:9443</code> with no
+      <code>Cross-Origin-Opener-Policy</code> header (defaults to
+      <code>unsafe-none</code>). Opening this page as a popup from a page with
+      <code>COOP: same-origin</code> severs the browsing context group and triggers
+      a violation report on the opener.
+    </p>
+  </body>
+</html>
