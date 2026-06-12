@@ -2,14 +2,17 @@
 
 caddy run from this folder
 
-Open: https://localhost:8443 
+Open: https://localhost:8443  - index runs the tests, some of which are commented.
+
+
+There is also https://localhost:9443 from which "cross origin" scripts are loaded
 
 
 # Using Caddy
 
 https://github.com/caddyserver/caddy/releases/tag/v2.10.2
 
-Caddy cool server for doing HTTPs and works without me having to create CA. Also can set CSP headers.
+Caddy cool server for doing HTTPs and works without me having to create CA. Also can set CSP headers and multiple servers in one file.
 Installed with choclaty.
 
 Need to remove the certificate afterwards.
@@ -30,11 +33,4 @@ Then delete Caddy’s PKI directory:
 
 https://medium.com/@krishnachirumamilla/content-security-policy-worker-src-cd06ecfa2fe8 - CSP
 
-## Running this
 
-caddy run
-
-Open: https://localhost:8443 
-
-
-There is also https://localhost:9443 from which "cross origin" scripts are loaded
