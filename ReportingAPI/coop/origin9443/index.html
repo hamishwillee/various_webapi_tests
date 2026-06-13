@@ -2,15 +2,48 @@
 <html>
   <head>
     <title>Cross-Origin Target (COOP test)</title>
+    <style>
+      body { font-family: sans-serif; max-width: 700px; margin: 0 auto; padding: 16px; }
+      .go-back { margin-top: 24px; padding: 12px 16px; background: #fff8e1; border: 1px solid #ffc107; border-radius: 4px; }
+    </style>
   </head>
   <body>
-    <h1>Cross-Origin Target</h1>
+    <h1>Cross-Origin Target (9443)</h1>
     <p>
-      This page is served from <code>https://localhost:9443</code> with no
-      <code>Cross-Origin-Opener-Policy</code> header (defaults to
-      <code>unsafe-none</code>). Opening this page as a popup from a page with
-      <code>COOP: same-origin</code> severs the browsing context group and triggers
-      a violation report on the opener.
+      Served from <code>https://localhost:9443</code> with no COOP header
+      (defaults to <code>unsafe-none</code>).
     </p>
+
+    <h2>Access-to-opener test</h2>
+    <p>
+      When opened as a popup from the 8443 test page, this page accesses
+      <code>window.opener.closed</code>. In <strong>report-only</strong> mode the opener's
+      <code>ReportingObserver</code> and endpoint receive an
+      <code>access-to-coop-page-from-openee</code> report. In <strong>enforce</strong> mode
+      <code>window.opener</code> is null (BCG severed) so no report fires.
+    </p>
+
+    <h2>Navigation test</h2>
+    <p>
+      Arrived here when the nav popup navigated from 8443 to 9443, triggering a
+      <code>navigation-from-response</code> report (endpoint only, check the terminal).
+    </p>
+    <div class="go-back">
+      <strong>Trigger <code>navigation-to-response</code>:</strong>
+      Click Go Back to navigate this window back to the 8443 page. A
+      <code>navigation-to-response</code> report will fire on that page and be postMessaged to
+      the test page. Works in both report-only and enforce modes.
+      <br /><br />
+      <button onclick="history.back()">Go Back</button>
+    </div>
+
+    <script>
+      // Accessing window.opener.closed triggers access-to-coop-page-from-openee on the opener.
+      // In enforce mode window.opener is null so this is a no-op.
+      if (window.opener) {
+        const openerClosed = window.opener.closed;
+        console.log('window.opener.closed:', openerClosed);
+      }
+    </script>
   </body>
 </html>

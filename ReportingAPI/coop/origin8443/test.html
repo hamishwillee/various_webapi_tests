@@ -1,0 +1,395 @@
+<!doctype html>
+<html>
+  <head>
+    <title>COOP Test</title>
+    <style>
+      body { font-family: sans-serif; max-width: 900px; margin: 0 auto; padding: 16px; }
+      .banner {
+        padding: 12px 16px; border-radius: 4px; margin-bottom: 20px;
+        border: 1px solid #90caf9; background: #e3f2fd;
+      }
+      .banner.ro  { background: #f1f8e9; border-color: #a5d6a7; }
+      .banner.enforce { background: #fce4ec; border-color: #f48fb1; }
+      .banner code { font-size: 0.9em; }
+      .report-box {
+        background: #f4f4f4; border: 1px solid #ccc; padding: 10px;
+        white-space: pre-wrap; font-family: monospace; font-size: 0.85em;
+        color: #d32f2f; min-height: 40px; margin: 8px 0 16px;
+      }
+      .tag {
+        display: inline-block; padding: 2px 6px; border-radius: 3px;
+        font-size: 0.8em; font-weight: bold; margin-left: 6px; vertical-align: middle;
+      }
+      .tag-observer  { background: #c8e6c9; color: #1b5e20; }
+      .tag-endpoint  { background: #ffe0b2; color: #e65100; }
+      .tag-expected  { background: #e3f2fd; color: #0d47a1; }
+      .tag-not-expected { background: #ffcdd2; color: #b71c1c; }
+      .tag-uncertain { background: #fff9c4; color: #f57f17; }
+      .back { margin-bottom: 16px; }
+    </style>
+  </head>
+  <body>
+    <div class="back"><a href="/">← All configurations</a></div>
+
+    <h1>COOP Test: <span id="config-label">Loading…</span></h1>
+
+    <div class="banner" id="config-banner">
+      <strong>Header(s):</strong> <code id="config-headers"></code><br />
+      <strong>Expected <code>effectivePolicy</code> in reports:</strong>
+      <code id="config-effective-policy"></code><br />
+      <strong>Mode:</strong> <span id="config-mode"></span><br />
+      <strong>Access reports via 9443 popup (Tests 1–2):</strong>
+      <span id="config-access-label"></span><br />
+      <strong>Access reports via nav popup (Tests 3–4):</strong>
+      <span id="config-access-opener-label"></span><br />
+      <strong>Navigation reports:</strong> endpoint only in both modes
+    </div>
+
+    <p>
+      <span class="tag tag-observer">ReportingObserver</span> — shown in boxes below.<br />
+      <span class="tag tag-endpoint">Endpoint</span> — sent to report server (check terminal).
+    </p>
+    <hr />
+
+    <!-- ── Tests 1–2: Cross-origin popup (9443) ──────────────────────────────── -->
+    <h2>Cross-origin popup (<code>https://localhost:9443</code>, <code>unsafe-none</code>)</h2>
+    <button id="btn-open-access-popup">Open cross-origin popup (9443)</button>
+
+    <!-- ── Test 1: access-from-coop-page-to-openee ────────────────────────────── -->
+    <h2>
+      1. <code>access-from-coop-page-to-openee</code>
+      <span class="tag tag-observer">ReportingObserver</span>
+      <span class="tag tag-endpoint">Endpoint</span>
+      <span class="tag" id="tag-access-opened"></span>
+    </h2>
+    <p>
+      Fires on <em>this</em> page when it reads a property on the cross-origin popup (9443,
+      <code>unsafe-none</code>). In report-only mode the BCG is intact so the read succeeds
+      and a report fires. In enforce mode the BCG is severed —
+      <code>popup.closed</code> returns <code>true</code> immediately and no access occurs.
+    </p>
+    <div class="report-box" id="display-access-opened">Waiting…</div>
+    <button id="btn-access-opened">Read popup.closed → access-from-coop-page-to-openee</button>
+
+    <!-- ── Test 2: access-to-coop-page-from-openee ────────────────────────────── -->
+    <h2>
+      2. <code>access-to-coop-page-from-openee</code>
+      <span class="tag tag-observer">ReportingObserver</span>
+      <span class="tag tag-endpoint">Endpoint</span>
+      <span class="tag" id="tag-access-opener"></span>
+    </h2>
+    <p>
+      Fires on <em>this</em> page when the popup (9443) reads <code>window.opener.closed</code>.
+      Auto-triggered when the 9443 popup loads (its inline script reads
+      <code>window.opener.closed</code>). In enforce mode <code>window.opener</code> is
+      null in the popup, so no access occurs.
+    </p>
+    <div class="report-box" id="display-access-opener">Open the 9443 popup above to trigger…</div>
+
+    <hr />
+
+    <!-- ── Tests 3–6: Nav popup (nav-test.html, same origin) ─────────────────── -->
+    <h2>Nav popup (<code>nav-test.html</code>, same origin)</h2>
+    <p>
+      Open <code>nav-test.html</code> as a popup — shared for Tests 3–6. Both this page and
+      nav-test.html receive the same COOP header, so access reports (Tests 3–4) only fire for
+      policies that treat the opener–popup relationship as a BCG boundary
+      (most visible with <code>noopener-allow-popups</code>).
+    </p>
+    <button id="btn-open-nav-popup">Open nav popup (nav-test.html)</button>
+
+    <!-- ── Test 3: access-to-coop-page-from-opener ───────────────────────────── -->
+    <h2>
+      3. <code>access-to-coop-page-from-opener</code>
+      <span class="tag tag-observer">ReportingObserver</span>
+      <span class="tag tag-endpoint">Endpoint</span>
+      <span class="tag" id="tag-access-to-opener"></span>
+    </h2>
+    <p>
+      Fires on <em>nav-test.html</em> (the COOP popup) when <em>this</em> page reads the popup's
+      <code>location</code> property. Report is forwarded here via <code>postMessage</code>.
+    </p>
+    <div class="report-box" id="display-access-to-opener">Open the nav popup above, then click below.</div>
+    <button id="btn-read-nav-popup">Read nav popup's location → access-to-coop-page-from-opener</button>
+
+    <!-- ── Test 4: access-from-coop-page-to-opener ───────────────────────────── -->
+    <h2>
+      4. <code>access-from-coop-page-to-opener</code>
+      <span class="tag tag-observer">ReportingObserver</span>
+      <span class="tag tag-endpoint">Endpoint</span>
+      <span class="tag" id="tag-access-from-opener"></span>
+    </h2>
+    <p>
+      Fires on <em>nav-test.html</em> (the COOP popup) when it reads
+      <code>window.opener.closed</code> (this page's property). Report is forwarded here via
+      <code>postMessage</code>. Click <strong>"Read opener.closed"</strong> inside the nav popup
+      window to trigger.
+    </p>
+    <div class="report-box" id="display-access-from-opener">Open the nav popup above, then click "Read opener.closed" inside it.</div>
+
+    <!-- ── Test 5: navigation-from-response ──────────────────────────────────── -->
+    <h2>
+      5. <code>navigation-from-response</code>
+      <span class="tag tag-endpoint">Endpoint only</span>
+      <span class="tag tag-expected">Expected in both modes</span>
+    </h2>
+    <p>
+      Fires on <code>nav-test.html</code> when it navigates away to 9443 (COOP mismatch).
+      Endpoint delivery only — the page is navigating away so no observer callback is possible.
+      Check the report server terminal.
+    </p>
+    <div class="report-box" id="display-nav-from">Check report server output after clicking below.</div>
+    <button id="btn-nav-to-9443">Navigate popup → 9443  (triggers navigation-from-response)</button>
+
+    <!-- ── Test 6: navigation-to-response ────────────────────────────────────── -->
+    <h2>
+      6. <code>navigation-to-response</code>
+      <span class="tag tag-observer">ReportingObserver</span>
+      <span class="tag tag-endpoint">Endpoint</span>
+      <span class="tag tag-expected">Expected in both modes</span>
+    </h2>
+    <p>
+      Fires on <code>nav-test.html</code> when it navigates back to this origin.
+      The popup's observer captures the buffered report and postMessages it here.
+      Run Test 5 first. In enforce mode the popup handle is detached after Test 5,
+      so use the <strong>Go Back</strong> button inside the popup window (now showing 9443) instead.
+    </p>
+    <div class="report-box" id="display-nav-to">Run Test 5 first, then click below (or use Go Back in the popup).</div>
+    <button id="btn-nav-back">Navigate popup back → this origin  (triggers navigation-to-response)</button>
+
+    <script>
+      const CONFIGS = {
+        'ro-same-origin': {
+          label: 'Report-Only: same-origin',
+          headers: 'Cross-Origin-Opener-Policy-Report-Only: same-origin',
+          effectivePolicy: 'same-origin',
+          mode: 'report-only',
+          accessReports: true,
+          // Both pages share the same policy and origin → same BCG → no access reports for nav popup
+          accessOpenerReports: false,
+        },
+        'ro-same-origin-allow-popups': {
+          label: 'Report-Only: same-origin-allow-popups',
+          headers: 'Cross-Origin-Opener-Policy-Report-Only: same-origin-allow-popups',
+          effectivePolicy: 'same-origin-allow-popups',
+          mode: 'report-only',
+          accessReports: null,
+          accessOpenerReports: null,
+        },
+        'ro-noopener-allow-popups': {
+          label: 'Report-Only: noopener-allow-popups',
+          headers: 'Cross-Origin-Opener-Policy-Report-Only: noopener-allow-popups',
+          effectivePolicy: 'noopener-allow-popups',
+          mode: 'report-only',
+          accessReports: true,
+          // noopener-allow-popups treats opener–popup as BCG boundary → access in both directions reported
+          accessOpenerReports: true,
+        },
+        'ro-same-origin-plus-coep': {
+          label: 'Report-Only: same-origin + COEP require-corp',
+          headers: 'Cross-Origin-Opener-Policy-Report-Only: same-origin\n' +
+                   'Cross-Origin-Embedder-Policy-Report-Only: require-corp',
+          effectivePolicy: 'same-origin-plus-COEP',
+          mode: 'report-only',
+          accessReports: true,
+          accessOpenerReports: false,
+        },
+        'enforce-same-origin': {
+          label: 'Enforce: same-origin',
+          headers: 'Cross-Origin-Opener-Policy: same-origin',
+          effectivePolicy: 'same-origin',
+          mode: 'enforce',
+          accessReports: false,
+          accessOpenerReports: false,
+        },
+        'enforce-same-origin-allow-popups': {
+          label: 'Enforce: same-origin-allow-popups',
+          headers: 'Cross-Origin-Opener-Policy: same-origin-allow-popups',
+          effectivePolicy: 'same-origin-allow-popups',
+          mode: 'enforce',
+          accessReports: null,
+          accessOpenerReports: null,
+        },
+        'enforce-noopener-allow-popups': {
+          label: 'Enforce: noopener-allow-popups',
+          headers: 'Cross-Origin-Opener-Policy: noopener-allow-popups',
+          effectivePolicy: 'noopener-allow-popups',
+          mode: 'enforce',
+          accessReports: false,
+          accessOpenerReports: false,
+        },
+        'enforce-same-origin-plus-coep': {
+          label: 'Enforce: same-origin + COEP require-corp',
+          headers: 'Cross-Origin-Opener-Policy: same-origin\n' +
+                   'Cross-Origin-Embedder-Policy: require-corp',
+          effectivePolicy: 'same-origin-plus-COEP',
+          mode: 'enforce',
+          accessReports: false,
+          accessOpenerReports: false,
+        },
+      };
+
+      const pathSeg = window.location.pathname.split('/')[1] || '';
+      const config = CONFIGS[pathSeg] || {
+        label: '(unknown config)',
+        headers: 'none',
+        effectivePolicy: 'unknown',
+        mode: 'unknown',
+        accessReports: null,
+        accessOpenerReports: null,
+      };
+      const prefix = pathSeg ? '/' + pathSeg : '';
+
+      // Populate banner
+      document.getElementById('config-label').textContent = config.label;
+      document.getElementById('config-headers').textContent = config.headers;
+      document.getElementById('config-effective-policy').textContent = '"' + config.effectivePolicy + '"';
+      document.getElementById('config-mode').textContent = config.mode;
+      document.getElementById('config-banner').classList.add(config.mode);
+
+      const accessInfo = {
+        true:  ['Expected', 'tag-expected'],
+        false: ['Not expected — BCG severed or same BCG', 'tag-not-expected'],
+        null:  ['Uncertain — verify empirically', 'tag-uncertain'],
+      };
+
+      const [accessText, accessCls] = accessInfo[String(config.accessReports)] ?? ['?', ''];
+      document.getElementById('config-access-label').textContent = accessText;
+      for (const id of ['tag-access-opened', 'tag-access-opener']) {
+        const el = document.getElementById(id);
+        el.textContent = accessText;
+        el.classList.add(accessCls);
+      }
+
+      const [accessOpenerText, accessOpenerCls] = accessInfo[String(config.accessOpenerReports)] ?? ['?', ''];
+      document.getElementById('config-access-opener-label').textContent = accessOpenerText;
+      for (const id of ['tag-access-to-opener', 'tag-access-from-opener']) {
+        const el = document.getElementById(id);
+        el.textContent = accessOpenerText;
+        el.classList.add(accessOpenerCls);
+      }
+
+      function serializeReport(report) {
+        const bodyKeys = [
+          'type', 'disposition', 'effectivePolicy', 'property',
+          'openerURL', 'openedWindowURL', 'openedWindowInitialURL',
+          'initialPopupURL', 'openeeURL',
+          'previousResponseURL', 'nextResponseURL', 'referrer',
+          'sourceFile', 'lineNumber', 'columnNumber',
+        ];
+        const body = {};
+        if (report.body) {
+          for (const key of bodyKeys) {
+            const val = report.body[key];
+            if (val !== undefined && val !== null) body[key] = val;
+          }
+        }
+        return { type: report.type, url: report.url, body };
+      }
+
+      let accessPopupHandle = null;
+      let navPopupHandle = null;
+
+      // Captures access reports that fire directly on this page (Tests 1–2).
+      const observer = new ReportingObserver(
+        (reports) => {
+          reports.forEach((report) => {
+            console.log('COOP report (this page):', report.type, report.body);
+            const bodyType = report.body?.type;
+            const displayMap = {
+              'access-from-coop-page-to-openee': 'display-access-opened',
+              'access-to-coop-page-from-openee': 'display-access-opener',
+              'navigation-to-response': 'display-nav-to',
+            };
+            const elId = displayMap[bodyType];
+            if (elId) {
+              document.getElementById(elId).innerText =
+                JSON.stringify(serializeReport(report), null, 2);
+            }
+          });
+        },
+        { buffered: true },
+      );
+      observer.observe();
+
+      // Reports forwarded from nav-test.html via postMessage (Tests 3–6).
+      window.addEventListener('message', (event) => {
+        if (event.origin !== 'https://localhost:8443') return;
+        const report = event.data?.coopReport;
+        if (!report) return;
+        console.log('Report via postMessage from nav-test.html:', report);
+        const displayMap = {
+          'navigation-to-response':          'display-nav-to',
+          'access-to-coop-page-from-opener': 'display-access-to-opener',
+          'access-from-coop-page-to-opener': 'display-access-from-opener',
+        };
+        const elId = displayMap[report.body?.type];
+        if (elId) {
+          document.getElementById(elId).innerText = JSON.stringify(report, null, 2);
+        }
+      });
+
+      // ── Tests 1 & 2: open cross-origin popup ───────────────────────────────
+      document.getElementById('btn-open-access-popup').addEventListener('click', () => {
+        accessPopupHandle = window.open('https://localhost:9443/');
+      });
+
+      // ── Test 1: read popup property → access-from-coop-page-to-openee ───────
+      document.getElementById('btn-access-opened').addEventListener('click', () => {
+        if (!accessPopupHandle) {
+          document.getElementById('display-access-opened').innerText = 'Open the 9443 popup first.';
+          return;
+        }
+        const isClosed = accessPopupHandle.closed;
+        console.log('popup.closed:', isClosed);
+        if (isClosed) {
+          document.getElementById('display-access-opened').innerText =
+            'popup.closed is true — BCG severed (enforce mode). No access report generated.';
+        }
+      });
+
+      // ── Tests 3–6: open nav popup ──────────────────────────────────────────
+      document.getElementById('btn-open-nav-popup').addEventListener('click', () => {
+        navPopupHandle = window.open('https://localhost:8443' + prefix + '/nav-test.html');
+      });
+
+      // ── Test 3: read nav popup's location → access-to-coop-page-from-opener ─
+      document.getElementById('btn-read-nav-popup').addEventListener('click', () => {
+        if (!navPopupHandle) {
+          document.getElementById('display-access-to-opener').innerText = 'Open the nav popup first.';
+          return;
+        }
+        if (navPopupHandle.closed) {
+          document.getElementById('display-access-to-opener').innerText =
+            'Nav popup handle is detached (enforce mode). No access report generated.';
+          return;
+        }
+        const loc = navPopupHandle.location.href;
+        document.getElementById('display-access-to-opener').innerText =
+          'Read nav popup location: ' + loc + '. Waiting for report to be forwarded from nav popup…';
+      });
+
+      // ── Test 5: navigate popup to 9443 → navigation-from-response ────────────
+      document.getElementById('btn-nav-to-9443').addEventListener('click', () => {
+        if (!navPopupHandle) {
+          document.getElementById('display-nav-from').innerText = 'Open the nav popup first.';
+          return;
+        }
+        navPopupHandle.location.href = 'https://localhost:9443/';
+        document.getElementById('display-nav-from').innerText =
+          'Navigated popup to 9443. Check report server for navigation-from-response.';
+      });
+
+      // ── Test 6: navigate popup back → navigation-to-response ──────────────
+      document.getElementById('btn-nav-back').addEventListener('click', () => {
+        if (!navPopupHandle || navPopupHandle.closed) {
+          document.getElementById('display-nav-to').innerText =
+            'Popup handle is detached (enforce mode — BCG was severed).\n' +
+            'Click "Go Back" in the popup window (showing 9443) to navigate it back to this origin.';
+          return;
+        }
+        navPopupHandle.location.assign('https://localhost:8443' + prefix + '/nav-test.html');
+      });
+    </script>
+  </body>
+</html>

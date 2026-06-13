@@ -16,6 +16,7 @@ Tests cover both the in-page `ReportingObserver` JavaScript API and server-side 
 | Directory | Report type tested |
 |---|---|
 | `coep/` | COEP / CORP violations (cross-origin embedder + resource policy) |
+| `coop/` | COOP violations (cross-origin opener policy) |
 | `crash/` | Crash reports (tab kill / unresponsive) |
 | `deprecation/` | Deprecated API usage (e.g. synchronous XHR) |
 | `integrity-policy-violation/` | SRI / Integrity-Policy violations |
@@ -45,6 +46,7 @@ npm run start:intervention
 npm run start:permissions
 npm run start:integrity
 npm run start:coep
+npm run start:coop
 ```
 
 Press `Ctrl+C` to stop both processes.
