@@ -16,10 +16,12 @@ Tests cover both the in-page `ReportingObserver` JavaScript API and server-side 
 | Directory | Report type tested |
 |---|---|
 | `coep/` | COEP / CORP violations (cross-origin embedder + resource policy) |
+| `coop/` | COOP violations (cross-origin opener policy) |
 | `crash/` | Crash reports (tab kill / unresponsive) |
 | `deprecation/` | Deprecated API usage (e.g. synchronous XHR) |
 | `integrity-policy-violation/` | SRI / Integrity-Policy violations |
 | `intervention/` | Browser intervention reports (e.g. blocked autoplay, `document.write`) |
+| `document-policy/` | Document-Policy violations (e.g. JS Self-Profiling API blocked) |
 | `permissions-policy-violation/` | Permissions-Policy violations (e.g. blocked geolocation) |
 
 ---
@@ -39,10 +41,12 @@ Then start both the report server and Caddy together:
 ```sh
 npm run start:crash
 npm run start:deprecation
+npm run start:document-policy
 npm run start:intervention
 npm run start:permissions
 npm run start:integrity
 npm run start:coep
+npm run start:coop
 ```
 
 Press `Ctrl+C` to stop both processes.

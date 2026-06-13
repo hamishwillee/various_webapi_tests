@@ -6,7 +6,9 @@
     "start:integrity": "echo Open: https://localhost:8443 && concurrently \"node report-server.js\" \"cd integrity-policy-violation && caddy run\"",
     "start:intervention": "echo Open: https://localhost:8443 && concurrently \"node report-server.js\" \"cd intervention && caddy run\"",
     "start:permissions": "echo Open: https://localhost:8443 && concurrently \"node report-server.js\" \"cd permissions-policy-violation && caddy run\"",
-    "start:crash": "echo Open: https://localhost:8443 && concurrently \"node report-server.js\" \"cd crash && caddy run\""
+    "start:crash": "echo Open: https://localhost:8443 && concurrently \"node report-server.js\" \"cd crash && caddy run\"",
+    "start:document-policy": "echo Open: https://localhost:8443 && concurrently \"node report-server.js\" \"cd document-policy && caddy run\"",
+    "start:coop": "echo Open: https://localhost:8443 && concurrently \"node report-server.js\" \"cd coop && caddy run\""
   },
   "devDependencies": {
     "concurrently": "^9.0.0",

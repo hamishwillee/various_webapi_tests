@@ -1,0 +1,104 @@
+<!doctype html>
+<html>
+  <head>
+    <title>COOP Reporting API — Test Configurations</title>
+    <style>
+      body { font-family: sans-serif; max-width: 900px; margin: 0 auto; padding: 16px; }
+      h2 { margin-top: 32px; }
+      table { border-collapse: collapse; width: 100%; margin-bottom: 8px; }
+      th, td { text-align: left; padding: 8px 12px; border: 1px solid #ddd; }
+      th { background: #f0f0f0; }
+      tr.ro td { background: #f1f8e9; }
+      tr.enforce td { background: #fce4ec; }
+      .tag { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 0.85em; font-weight: bold; }
+      .tag-ro { background: #c8e6c9; color: #1b5e20; }
+      .tag-enforce { background: #ffcdd2; color: #b71c1c; }
+      a { color: #1565c0; }
+      code { font-size: 0.9em; }
+      .theory { background: #fff8e1; border-left: 4px solid #ffc107; padding: 10px 14px; margin: 16px 0; }
+    </style>
+  </head>
+  <body>
+    <h1>COOP Reporting API — Test Configurations</h1>
+    <p>
+      Each link opens a test page served from <code>https://localhost:8443</code> with a specific
+      <code>Cross-Origin-Opener-Policy</code> (or <code>-Report-Only</code>) header applied by Caddy.
+      The cross-origin target is always <code>https://localhost:9443</code> (no COOP →
+      <code>effectivePolicy: "unsafe-none"</code>).
+    </p>
+
+    <div class="theory">
+      <strong>Theory to verify:</strong>
+      <em>access-to-opener</em> and <em>access-to-opened-window</em> reports can only be generated
+      under <strong>report-only</strong> mode. In enforce mode the browsing context group is severed
+      when the popup navigates to the incompatible origin — <code>popup.closed</code> returns
+      <code>true</code> immediately, so no cross-origin property access ever occurs and no access
+      reports are generated. Navigation reports (<em>navigation-from-response</em>,
+      <em>navigation-to-response</em>) go to the server endpoint in both modes.
+    </div>
+
+    <h2><span class="tag tag-ro">Report-Only</span> — access reports expected</h2>
+    <table>
+      <tr>
+        <th>effectivePolicy in reports</th>
+        <th>Headers applied</th>
+        <th></th>
+      </tr>
+      <tr class="ro">
+        <td><code>"same-origin"</code></td>
+        <td><code>Cross-Origin-Opener-Policy-Report-Only: same-origin</code></td>
+        <td><a href="/ro-same-origin/test.html">Open test</a></td>
+      </tr>
+      <tr class="ro">
+        <td><code>"same-origin-allow-popups"</code></td>
+        <td><code>Cross-Origin-Opener-Policy-Report-Only: same-origin-allow-popups</code></td>
+        <td><a href="/ro-same-origin-allow-popups/test.html">Open test</a></td>
+      </tr>
+      <tr class="ro">
+        <td><code>"noopener-allow-popups"</code></td>
+        <td><code>Cross-Origin-Opener-Policy-Report-Only: noopener-allow-popups</code></td>
+        <td><a href="/ro-noopener-allow-popups/test.html">Open test</a></td>
+      </tr>
+      <tr class="ro">
+        <td><code>"same-origin-plus-COEP"</code></td>
+        <td>
+          <code>Cross-Origin-Opener-Policy-Report-Only: same-origin</code> +
+          <code>Cross-Origin-Embedder-Policy-Report-Only: require-corp</code>
+        </td>
+        <td><a href="/ro-same-origin-plus-coep/test.html">Open test</a></td>
+      </tr>
+    </table>
+
+    <h2><span class="tag tag-enforce">Enforce</span> — access reports NOT expected (BCG severed)</h2>
+    <table>
+      <tr>
+        <th>effectivePolicy in reports</th>
+        <th>Headers applied</th>
+        <th></th>
+      </tr>
+      <tr class="enforce">
+        <td><code>"same-origin"</code></td>
+        <td><code>Cross-Origin-Opener-Policy: same-origin</code></td>
+        <td><a href="/enforce-same-origin/test.html">Open test</a></td>
+      </tr>
+      <tr class="enforce">
+        <td><code>"same-origin-allow-popups"</code></td>
+        <td><code>Cross-Origin-Opener-Policy: same-origin-allow-popups</code></td>
+        <td><a href="/enforce-same-origin-allow-popups/test.html">Open test</a></td>
+      </tr>
+      <tr class="enforce">
+        <td><code>"noopener-allow-popups"</code></td>
+        <td><code>Cross-Origin-Opener-Policy: noopener-allow-popups</code></td>
+        <td><a href="/enforce-noopener-allow-popups/test.html">Open test</a></td>
+      </tr>
+      <tr class="enforce">
+        <td><code>"same-origin-plus-COEP"</code></td>
+        <td>
+          <code>Cross-Origin-Opener-Policy: same-origin</code> +
+          <code>Cross-Origin-Embedder-Policy: require-corp</code>
+        </td>
+        <td><a href="/enforce-same-origin-plus-coep/test.html">Open test</a></td>
+      </tr>
+    </table>
+  </body>
+</html>

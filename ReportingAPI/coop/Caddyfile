@@ -1,0 +1,71 @@
+https://localhost:8443 {
+    root * ./origin8443
+    header Reporting-Endpoints "coop-endpoint=\"/report-handler\""
+
+    handle /report-handler {
+        reverse_proxy localhost:3000
+    }
+
+    # ── Report-Only configurations ─────────────────────────────────────────────
+    # BCG is NOT severed; cross-origin window access works → access reports fire.
+
+    handle /ro-same-origin/* {
+        header Cross-Origin-Opener-Policy-Report-Only "same-origin; report-to=\"coop-endpoint\""
+        uri strip_prefix /ro-same-origin
+        file_server
+    }
+    handle /ro-same-origin-allow-popups/* {
+        header Cross-Origin-Opener-Policy-Report-Only "same-origin-allow-popups; report-to=\"coop-endpoint\""
+        uri strip_prefix /ro-same-origin-allow-popups
+        file_server
+    }
+    handle /ro-noopener-allow-popups/* {
+        header Cross-Origin-Opener-Policy-Report-Only "noopener-allow-popups; report-to=\"coop-endpoint\""
+        uri strip_prefix /ro-noopener-allow-popups
+        file_server
+    }
+    # effectivePolicy "same-origin-plus-COEP" requires COOP same-origin + COEP require-corp.
+    handle /ro-same-origin-plus-coep/* {
+        header Cross-Origin-Opener-Policy-Report-Only "same-origin; report-to=\"coop-endpoint\""
+        header Cross-Origin-Embedder-Policy-Report-Only "require-corp; report-to=\"coop-endpoint\""
+        uri strip_prefix /ro-same-origin-plus-coep
+        file_server
+    }
+
+    # ── Enforce configurations ─────────────────────────────────────────────────
+    # BCG IS severed; popup.closed → true immediately; no cross-origin access → no access reports.
+
+    handle /enforce-same-origin/* {
+        header Cross-Origin-Opener-Policy "same-origin; report-to=\"coop-endpoint\""
+        uri strip_prefix /enforce-same-origin
+        file_server
+    }
+    handle /enforce-same-origin-allow-popups/* {
+        header Cross-Origin-Opener-Policy "same-origin-allow-popups; report-to=\"coop-endpoint\""
+        uri strip_prefix /enforce-same-origin-allow-popups
+        file_server
+    }
+    handle /enforce-noopener-allow-popups/* {
+        header Cross-Origin-Opener-Policy "noopener-allow-popups; report-to=\"coop-endpoint\""
+        uri strip_prefix /enforce-noopener-allow-popups
+        file_server
+    }
+    handle /enforce-same-origin-plus-coep/* {
+        header Cross-Origin-Opener-Policy "same-origin; report-to=\"coop-endpoint\""
+        header Cross-Origin-Embedder-Policy "require-corp; report-to=\"coop-endpoint\""
+        uri strip_prefix /enforce-same-origin-plus-coep
+        file_server
+    }
+
+    # ── Default: no COOP header (landing page at /) ────────────────────────────
+    handle {
+        file_server
+    }
+}
+
+https://localhost:9443 {
+    root * ./origin9443
+    file_server
+    header Reporting-Endpoints "coop-endpoint=\"/report-handler\""
+    reverse_proxy /report-handler localhost:3000
+}

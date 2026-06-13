@@ -1,0 +1,97 @@
+<!doctype html>
+<html>
+  <head>
+    <title>COOP Nav Helper</title>
+    <style>
+      body { font-family: sans-serif; max-width: 700px; margin: 0 auto; padding: 16px; }
+      .report-box {
+        background: #f4f4f4; border: 1px solid #ccc; padding: 10px;
+        white-space: pre-wrap; font-family: monospace; font-size: 0.85em;
+        color: #d32f2f; min-height: 40px; margin: 8px 0 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>COOP Navigation Helper</h1>
+    <p>
+      Opened as a popup from <code>test.html</code>. Triggers COOP reports from this page's
+      perspective and forwards them to the opener via <code>postMessage</code>.
+    </p>
+
+    <h2>1. <code>access-from-coop-page-to-opener</code></h2>
+    <p>
+      Reads <code>window.opener.closed</code> — this COOP-protected page accesses its opener's
+      property. Generates a report in <strong>report-only</strong> mode; in
+      <strong>enforce</strong> mode <code>window.opener</code> is <code>null</code> (BCG severed).
+      Most visible for <code>noopener-allow-popups</code>.
+    </p>
+    <div class="report-box" id="display-from-opener">Click button to trigger…</div>
+    <button id="btn-read-opener">Read opener.closed → access-from-coop-page-to-opener</button>
+
+    <h2>All reports on this page</h2>
+    <div class="report-box" id="display-all">Waiting for reports…</div>
+
+    <script>
+      function serializeReport(report) {
+        const bodyKeys = [
+          'type', 'disposition', 'effectivePolicy', 'property',
+          'openerURL', 'openedWindowURL', 'openedWindowInitialURL',
+          'initialPopupURL', 'openeeURL',
+          'previousResponseURL', 'nextResponseURL', 'referrer',
+          'sourceFile', 'lineNumber', 'columnNumber',
+        ];
+        const body = {};
+        if (report.body) {
+          for (const key of bodyKeys) {
+            const val = report.body[key];
+            if (val !== undefined && val !== null) body[key] = val;
+          }
+        }
+        return { type: report.type, url: report.url, body };
+      }
+
+      const allReports = [];
+
+      const observer = new ReportingObserver(
+        (reports) => {
+          reports.forEach((report) => {
+            console.log('nav-test COOP report:', report.type, report.body);
+            const serialized = serializeReport(report);
+            allReports.push(serialized);
+            document.getElementById('display-all').innerText =
+              JSON.stringify(allReports, null, 2);
+
+            if (report.body?.type === 'access-from-coop-page-to-opener') {
+              document.getElementById('display-from-opener').innerText =
+                JSON.stringify(serialized, null, 2);
+            }
+
+            try {
+              if (window.opener) {
+                window.opener.postMessage(
+                  { coopReport: serialized },
+                  'https://localhost:8443',
+                );
+              }
+            } catch (e) {
+              console.log('postMessage to opener failed:', e);
+            }
+          });
+        },
+        { buffered: true },
+      );
+      observer.observe();
+
+      document.getElementById('btn-read-opener').addEventListener('click', () => {
+        if (!window.opener) {
+          document.getElementById('display-from-opener').innerText =
+            'window.opener is null — BCG severed (enforce mode). No report possible.';
+          return;
+        }
+        const val = window.opener.closed;
+        document.getElementById('display-from-opener').innerText =
+          'Read window.opener.closed = ' + val + '. Waiting for observer callback…';
+      });
+    </script>
+  </body>
+</html>

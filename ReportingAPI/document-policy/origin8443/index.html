@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Reporting API: document-policy-violation Test Page</title>
+    <style>
+      #report-display {
+        background: #f4f4f4;
+        border: 1px solid #ccc;
+        padding: 10px;
+        white-space: pre-wrap;
+        font-family: monospace;
+        color: #d32f2f;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1>Reporting API: document-policy-violation Test Page</h1>
+    <p>
+      The server sets <code>Document-Policy: document-write=?0</code>, which blocks
+      <code>document.write()</code>. Calling it triggers a
+      <code>document-policy-violation</code> report.
+    </p>
+    <p>Status: Check the box below and the console for violation reports.</p>
+    <hr />
+    <div id="report-display">Waiting for reports...</div>
+    <hr />
+
+    <script>
+      const display = document.getElementById('report-display');
+
+      const observer = new ReportingObserver(
+        (reports) => {
+          const firstReport = reports[0];
+          display.innerText = JSON.stringify(firstReport, null, 2);
+          console.log(firstReport);
+        },
+        { types: ['document-policy-violation'], buffered: true },
+      );
+
+      observer.observe();
+    </script>
+
+    <script>
+      setTimeout(() => {
+        console.log('Attempting document.write...');
+        document.write('<p>This should trigger a violation</p>');
+    </script>
+  </body>
+</html>
