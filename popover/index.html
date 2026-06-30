@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Popover Hint Behavior Tests</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 1rem 2rem;
+      background: #f5f5f5;
+    }
+    h1 { margin-bottom: 0.25rem; }
+    .subtitle { color: #555; margin-top: 0; font-size: 0.9rem; }
+
+    .scenario {
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 1rem 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .scenario h2 { margin-top: 0; font-size: 1.1rem; }
+    .scenario .rule {
+      background: #e8f4fd;
+      border-left: 4px solid #2196f3;
+      padding: 0.4rem 0.75rem;
+      margin-bottom: 0.75rem;
+      font-size: 0.9rem;
+      color: #1a5276;
+    }
+    .warn {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      border-radius: 4px;
+      padding: 0.4rem 0.75rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.85rem;
+    }
+    .buttons { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem; }
+
+    button {
+      padding: 0.4rem 0.9rem;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    button.auto   { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    button.hint   { background: #fff3cd; color: #856404; border: 1px solid #ffc107; }
+    button.manual { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    button.hide   { background: #e2e3e5; color: #383d41; border: 1px solid #d6d8db; }
+
+    /* Popover base styles */
+    [popover] {
+      border: 2px solid #333;
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      font-size: 0.9rem;
+      max-width: 300px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      background: white;
+      inset: auto;
+      /* Position below the source/anchor element when anchor positioning is supported */
+      position-area: bottom span-left;
+    }
+    [popover]::before {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 0.4rem;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Auto popovers opened without a source get explicit positions
+       (position-area has nothing to anchor to without a source) */
+    #s1-auto   { top: 80px; left: 40px; }
+    #s3-auto   { top: 80px; left: 40px; }
+    #s3b-auto1 { top: 80px; left: 40px; }
+    #s4-auto   { top: 80px; left: 40px; }
+    #s4-hint   { top: 80px; left: 360px; }  /* unrelated hint has no anchor */
+    #s5-auto1      { top: 80px; left: 40px; }
+    #s5-unrelated  { top: 80px; left: 360px; }
+    #s6-trigger { top: 80px; left: 40px; }
+    #s6-during  { top: 80px; left: 360px; }
+    #s8-auto   { top: 80px; left: 40px; }
+
+    /* Color-coded by type */
+    [popover].type-auto   { border-color: #28a745; }
+    [popover].type-auto::before   { content: "AUTO popover"; color: #28a745; }
+    [popover].type-hint   { border-color: #ffc107; }
+    [popover].type-hint::before   { content: "HINT popover"; color: #856404; }
+    [popover].type-manual { border-color: #dc3545; }
+    [popover].type-manual::before { content: "MANUAL popover"; color: #dc3545; }
+
+    .nested-container {
+      margin-top: 0.75rem;
+      padding-top: 0.75rem;
+      border-top: 1px dashed #aaa;
+      font-size: 0.85rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .log-area {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      font-family: monospace;
+      font-size: 0.8rem;
+      padding: 0.75rem;
+      border-radius: 6px;
+      height: 100px;
+      overflow-y: auto;
+      margin-top: 0.5rem;
+    }
+    .log-area .log-show  { color: #6ec6a0; }
+    .log-area .log-hide  { color: #f48771; }
+    .log-area .log-event { color: #9cdcfe; }
+
+    .status-bar {
+      position: sticky;
+      top: 0;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 0.5rem 1rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.85rem;
+      z-index: 1000;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .status-bar b { color: #333; }
+    #visible-list { color: #555; }
+
+    .legend {
+      display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.8rem; margin-bottom: 1rem;
+    }
+    .legend span { padding: 0.2rem 0.6rem; border-radius: 4px; border: 1px solid #aaa; }
+
+    /* Browser compat banner */
+    #compat-banner {
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      margin-bottom: 1.5rem;
+      background: white;
+      font-size: 0.85rem;
+    }
+    #compat-banner h3 { margin: 0 0 0.5rem; font-size: 0.95rem; }
+    .compat-row { display: flex; align-items: baseline; gap: 0.5rem; margin: 0.2rem 0; }
+    .badge {
+      display: inline-block; padding: 0.1rem 0.5rem; border-radius: 3px;
+      font-size: 0.75rem; font-weight: bold; min-width: 4rem; text-align: center;
+    }
+    .badge.pass { background: #d4edda; color: #155724; }
+    .badge.fail { background: #f8d7da; color: #721c24; }
+    .badge.skip { background: #e2e3e5; color: #383d41; }
+  </style>
+</head>
+<body>
+
+<h1>Popover <code>popover=hint</code> Behavior Tests</h1>
+<p class="subtitle">
+  Tests for <a href="https://github.com/whatwg/html/pull/12345">whatwg/html #12345</a> —
+  model implementation: <a href="https://jakearchibald.github.io/random-stuff/popover-hint/">Jake Archibald demo</a>
+  (<a href="https://github.com/jakearchibald/random-stuff/blob/main/public/popover-hint/index.html">source</a>),
+  <a href="https://github.com/web-platform-tests/wpt/pull/59237">WPT PR #59237</a>.
+</p>
+
+<p style="background:#e8f4fd;border-left:4px solid #2196f3;padding:0.5rem 0.75rem;font-size:0.85rem;margin:0 0 1rem">
+  <strong>Key hierarchy rule:</strong> For a hint to coexist with an open auto, the hint must be
+  triggered from a button that lives <em>inside</em> the open auto (or hint) popover, with
+  <code>showPopover({source: thisButton})</code>. The browser traces the source element's popover
+  ancestry to establish the parent–child relationship. Two floating, independent popovers with
+  unrelated trigger buttons have no relationship and the stack dismisses one when the other opens.
+</p>
+
+<div class="legend">
+  <span style="background:#d4edda;color:#155724">GREEN = auto popover / button</span>
+  <span style="background:#fff3cd;color:#856404">YELLOW = hint popover / button</span>
+  <span style="background:#f8d7da;color:#721c24">RED = manual popover / button</span>
+  <span style="background:#e2e3e5;color:#383d41">GREY = hide/reset</span>
+</div>
+
+<!-- ── Compat probe elements (hidden, JS only) ── -->
+<div id="probe-auto1" popover="auto" style="display:none"></div>
+<div id="probe-auto2" popover="auto" style="display:none"></div>
+<div id="probe-hint1" popover="hint" style="display:none"></div>
+<div id="probe-hint2" popover="hint" style="display:none"></div>
+<div id="probe-hint3" popover="hint" style="display:none"></div>
+
+<div id="compat-banner">
+  <h3>Browser compatibility — whatwg/html #12345 (API-level probe)</h3>
+  <p style="margin:0 0 0.4rem;font-size:0.8rem;color:#555;">
+    <strong>API PASS/FAIL</strong> = imperative JS test.
+    Browsers may pass API tests while interactive behaviour (hover, click, light-dismiss) still uses
+    old rules. Always confirm with the manual scenarios below.
+  </p>
+  <div id="compat-results"><em>Running…</em></div>
+</div>
+
+<script>
+(function checkCompat() {
+  const a1 = document.getElementById('probe-auto1');
+  const a2 = document.getElementById('probe-auto2');
+  const h1 = document.getElementById('probe-hint1');
+  const h2 = document.getElementById('probe-hint2');
+  const h3 = document.getElementById('probe-hint3');
+  const probes = [a1,a2,h1,h2,h3];
+
+  function isOpen(el) { return el.matches(':popover-open'); }
+  function reset() { probes.forEach(p => { try { p.hidePopover(); } catch(e){} }); }
+  function show(el, src) {
+    try { el.showPopover(src ? {source:src} : undefined); return true; }
+    catch(e) { return false; }
+  }
+
+  probes.forEach(p => p.style.removeProperty('display'));
+  const R = [];
+
+  // Rule 1
+  reset(); show(a1); show(h1);
+  R.push({k:'api', label:'Rule 1 – hint shown while auto open: both stay (show-time only)', pass: isOpen(a1)&&isOpen(h1)});
+  R.push({k:'manual', label:'Rule 1 – hover button inside auto → hint appears, auto stays → Scenario 1'});
+
+  // Rule 2
+  reset(); show(a1); show(h1,a1); show(h2,h1);
+  const r2i = isOpen(a1)&&isOpen(h1)&&isOpen(h2);
+  show(h3);
+  R.push({k:'api', label:'Rule 2 – showing unrelated hint closes non-ancestor hints', pass: r2i&&isOpen(a1)&&!isOpen(h1)&&!isOpen(h2)&&isOpen(h3)});
+  R.push({k:'manual', label:'Rule 2 – parent hint survives when child hint is shown → Scenario 7'});
+
+  // Rule 3
+  R.push({k:'manual', label:'Rule 3 – click-outside light-dismiss → Scenarios 3 & 3b'});
+
+  // Rule 4
+  reset(); show(a1); show(h1);
+  const r4i = isOpen(a1)&&isOpen(h1);
+  try { a1.hidePopover(); } catch(e){}
+  R.push({k:'api', label:'Rule 4 – hiding auto does not hide unrelated hint', pass: r4i&&!isOpen(a1)&&isOpen(h1)});
+
+  // Rule 5
+  reset(); show(h1);
+  let r5t = false;
+  try { a1.showPopover({source:h1}); } catch(e){ r5t=true; }
+  R.push({k:'api', label:'Rule 5 – showPopover(auto,{source:hint}) throws InvalidStateError', pass: r5t&&!isOpen(a1)});
+  R.push({k:'manual', label:'Rule 5 – popovertarget button inside hint → auto should NOT open → Scenario 5'});
+
+  reset();
+  probes.forEach(p => p.style.display='none');
+
+  document.getElementById('compat-results').innerHTML = R.map(r => {
+    const cls  = r.k==='manual' ? 'skip' : r.pass ? 'pass' : 'fail';
+    const text = r.k==='manual' ? 'MANUAL'  : r.pass ? 'API PASS' : 'API FAIL';
+    return `<div class="compat-row"><span class="badge ${cls}">${text}</span>${r.label}</div>`;
+  }).join('');
+})();
+</script>
+
+<div class="status-bar">
+  <b>Currently visible popovers:</b> <span id="visible-list">(none)</span>
+  &nbsp;|&nbsp;
+  <button onclick="hideAll()" style="padding:0.2rem 0.6rem;font-size:0.8rem;background:#eee;border:1px solid #aaa;border-radius:4px;cursor:pointer;">Hide All</button>
+</div>
+
+<!-- ============================================================
+     SCENARIO 1 — Rule 1: hint shown from inside auto, auto stays open
+     ============================================================ -->
+<div class="scenario">
+  <h2>Scenario 1 (Rule 1): Showing a hint from inside an auto does not close the auto</h2>
+  <div class="rule">
+    The hint trigger button lives <strong>inside</strong> the auto popover.
+    <code>showPopover({source: thisButton})</code> tells the browser the button's open ancestor
+    (the auto) is the hint's parent. Both stay visible simultaneously.
+  </div>
+  <div class="buttons">
+    <button class="auto" onclick="openPop('s1-auto')">1. Open auto</button>
+    <button class="hide" onclick="closePop('s1-auto')">Close auto</button>
+  </div>
+  <p style="font-size:0.85rem;color:#555;margin:0.25rem 0">
+    Then hover the button <em>inside</em> the auto popover.
+  </p>
+
+  <!-- Auto popover — contains the hint trigger and the hint itself -->
+  <div id="s1-auto" popover="auto" class="type-auto">
+    <b>S1-Auto</b><br>I should stay visible when the hint appears.
+    <div class="nested-container">
+      <button class="hint"
+              onmouseenter="showFrom(this,'s1-hint')"
+              onmouseleave="closePop('s1-hint')">
+        2. Hover → show hint (source = me, inside auto)
+      </button>
+    </div>
+    <!-- Hint is a DOM child of the auto, shown in top layer via source relationship -->
+    <div id="s1-hint" popover="hint" class="type-hint">
+      <b>S1-Hint</b> (source = button inside auto)<br>
+      The auto should still be visible.
+    </div>
+  </div>
+  <div id="log-s1" class="log-area"></div>
+</div>
+
+<!-- ============================================================
+     SCENARIO 2 — Rule 2: unrelated hint closes other hints, ancestor hint survives
+     ============================================================ -->
+<div class="scenario">
+  <h2>Scenario 2 (Rule 2): Opening a hint closes non-ancestor hints but not ancestor hints</h2>
+  <div class="rule">
+    Step 1: open the ancestor hint. Step 2: open Hint A from a button <em>inside</em> the ancestor
+    — making A a child of ancestor. Step 3: open Hint B from another button inside the ancestor —
+    Hint A closes (sibling = non-ancestor of B), but the ancestor hint stays (it IS an ancestor of B).
+  </div>
+  <div class="buttons">
+    <button class="hint" onclick="showFrom(this,'s2-ancestor')">1. Open ancestor hint</button>
+    <button class="hide" onclick="closePop('s2-ancestor')">Reset</button>
+  </div>
+  <p style="font-size:0.85rem;color:#555;margin:0.25rem 0">
+    Then use the buttons <em>inside</em> the ancestor hint.
+  </p>
+
+  <div id="s2-ancestor" popover="hint" class="type-hint">
+    <b>S2-Ancestor</b><br>I am the ancestor. I should stay open throughout.
+    <div class="nested-container">
+      <button class="hint" onclick="showFrom(this,'s2-hint-a')">2. Click → Hint A (child of me)</button>
+      <button class="hint" onclick="showFrom(this,'s2-hint-b')">3. Click → Hint B (closes A, I stay)</button>
+    </div>
+    <div id="s2-hint-a" popover="hint" class="type-hint">
+      <b>S2-Hint A</b><br>I close when Hint B opens — we are siblings, so I am a non-ancestor of B.
+    </div>
+    <div id="s2-hint-b" popover="hint" class="type-hint">
+      <b>S2-Hint B</b><br>Hint A closed. The ancestor hint is still open.
+    </div>
+  </div>
+  <div id="log-s2" class="log-area"></div>
+</div>
+
+<!-- ============================================================
+     SCENARIO 3 — Rule 3: click-outside light-dismiss
+     ============================================================ -->
+<div class="scenario">
+  <h2>Scenario 3 (Rule 3): Clicking outside closes auto and hint consistently</h2>
+  <div class="rule">
+    Open the auto, click the button inside to show the hint (it stays open — no hover dismiss).
+    Both are now visible. Test what clicking in different places does.
+  </div>
+  <div class="buttons">
+    <button class="auto" onclick="openPop('s3-auto')">1. Open auto</button>
+    <button class="manual" onclick="openPop('s3-manual')">Open manual (stays open always)</button>
+    <button class="hide" onclick="closePop('s3-manual')">Close manual</button>
+  </div>
+  <p style="font-size:0.85rem;color:#555;margin:0.25rem 0">
+    After showing both: click outside all popovers → auto and hint close, manual stays.<br>
+    Click <em>on</em> the hint → hint is a child of auto, so clicking inside hint is NOT outside
+    the auto — auto should stay. Clicking <em>on</em> the auto → that IS outside the hint — hint closes.
+  </p>
+
+  <div id="s3-auto" popover="auto" class="type-auto">
+    <b>S3-Auto</b><br>Clicking outside closes me. Clicking on my child hint does NOT close me.
+    <div class="nested-container">
+      <button class="hint" onclick="showFrom(this,'s3-hint')">
+        2. Click → show hint (stays open)
+      </button>
+    </div>
+    <div id="s3-hint" popover="hint" class="type-hint">
+      <b>S3-Hint</b> (child of auto)<br>
+      Clicking on me → auto stays (I'm its child).<br>
+      Clicking on the auto → I close.
+    </div>
+  </div>
+
+  <div id="s3-manual" popover="manual" class="type-manual">
+    <b>S3-Manual</b><br>Click outside me — I should <em>stay open</em>.<br>
+    <button class="hide" onclick="closePop('s3-manual')">Close me</button>
+  </div>
+  <div id="log-s3" class="log-area"></div>
+</div>
+
+<!-- ============================================================
+     SCENARIO 3b — Rule 3 nested: hint light-dismisses, auto1 survives as ancestor
+     ============================================================ -->
+<div class="scenario">
+  <h2>Scenario 3b (Rule 3 nested): Hint light-dismisses on click-outside; ancestor auto stays</h2>
+  <div class="rule">
+    Auto1 is the root. Auto2 and Hint are both children of Auto1 (triggered from inside it).
+    Clicking <em>outside</em> all popovers → all three close (both auto and hint light-dismiss).<br>
+    Clicking <em>on</em> Auto1's body (not on Auto2 or Hint) → Auto2 and Hint close, Auto1 stays.
+  </div>
+  <div class="buttons">
+    <button class="auto" onclick="openPop('s3b-auto1')">1. Open Auto1</button>
+    <button class="hide" onclick="closePop('s3b-auto1')">Close all</button>
+  </div>
+  <p style="font-size:0.85rem;color:#555;margin:0.25rem 0">
+    Then use the buttons <em>inside Auto1</em> to open Auto2 and the hint.
+    Once all three are open, click in different areas to see what closes.
+  </p>
+
+  <div id="s3b-auto1" popover="auto" class="type-auto">
+    <b>S3b-Auto1</b> (root ancestor)<br>
+    Click anywhere on <em>me</em> (not on Auto2 or Hint) → my children close, I stay.
+    <div class="nested-container">
+      <button class="auto" popovertarget="s3b-auto2">2. Open Auto2 (child of Auto1)</button>
+      <button class="hint" onclick="showFrom(this,'s3b-hint')">3. Click → Hint (child of Auto1)</button>
+    </div>
+
+    <div id="s3b-auto2" popover="auto" class="type-auto">
+      <b>S3b-Auto2</b> (child of Auto1)
+    </div>
+    <div id="s3b-hint" popover="hint" class="type-hint">
+      <b>S3b-Hint</b> (child of Auto1)<br>
+      I light-dismiss on click-outside, just like an auto.
+    </div>
+  </div>
+  <div id="log-s3b" class="log-area"></div>
+</div>
+
+<!-- ============================================================
+     SCENARIO 4 — Rule 4: hiding auto leaves unrelated hint open
+     ============================================================ -->
+<div class="scenario">
+  <h2>Scenario 4 (Rule 4): Hiding an auto does not close an unrelated hint</h2>
+  <div class="rule">
+    Opens both the auto and the unrelated hint together, then hides the auto after 4 seconds via
+    a timer — no clicks needed, so light-dismiss cannot interfere. The hint should still be visible
+    after the auto disappears.
+  </div>
+  <div class="warn">
+    <strong>Why a timer?</strong> Clicking "hide auto" is itself a click outside both open popovers,
+    which light-dismisses them both before the button's handler runs. A timer hides the auto
+    programmatically with no user click involved.
+  </div>
+  <div class="buttons">
+    <button class="auto" onclick="startS4Test(this)">1. Open both — auto hides in 4 s</button>
+    <button class="hide" onclick="closePop('s4-auto'); closePop('s4-hint'); clearS4()">Reset</button>
+  </div>
+  <div id="s4-status" style="font-size:0.85rem;color:#555;margin:0.25rem 0;min-height:1.2em;"></div>
+
+  <div id="s4-hint" popover="hint" class="type-hint">
+    <b>S4-Hint</b> (unrelated to auto)<br>
+    After step 2 (hide auto): I should still be visible.
+  </div>
+  <div id="s4-auto" popover="auto" class="type-auto">
+    <b>S4-Auto</b> (unrelated to hint)
+  </div>
+  <div id="log-s4" class="log-area"></div>
+</div>
+
+<!-- ============================================================
+     SCENARIO 5 — Rule 5: auto inside hint downgrades to hint
+     ============================================================ -->
+<div class="scenario">
+  <h2>Scenario 5 (Rule 5): Auto shown as child of hint is downgraded to hint</h2>
+  <div class="rule">
+    When an auto is shown with a source element that is inside an open hint, its effective type
+    is downgraded to hint. Two observable effects:
+    (A) it does <strong>not</strong> close an already-open unrelated auto (a real auto would); and
+    (B) an unrelated hint <strong>does</strong> close it (because it is now in the hint stack).
+  </div>
+  <div class="buttons">
+    <button class="auto" onclick="openPop('s5-auto1')">1. Open Auto1 (control — should survive)</button>
+    <button class="hide" onclick="s5Reset()">Reset</button>
+  </div>
+  <p style="font-size:0.85rem;color:#555;margin:0.25rem 0">
+    Then use the buttons inside each popover in order.
+  </p>
+
+  <!-- Auto1: control popover; if downgrade works, it stays open throughout -->
+  <div id="s5-auto1" popover="auto" class="type-auto">
+    <b>S5-Auto1</b> (control)<br>
+    I should stay open when the downgraded auto2 appears.
+    <div class="nested-container">
+      <button class="hint" onclick="showFrom(this,'s5-hint')">2. Open hint (child of Auto1)</button>
+    </div>
+    <div id="s5-hint" popover="hint" class="type-hint">
+      <b>S5-Hint</b> (child of Auto1)
+      <div class="nested-container">
+        <button class="auto" onclick="s5OpenAuto2(this)">3. Open Auto2 from inside hint → should downgrade</button>
+      </div>
+      <div id="s5-auto2" popover="auto" class="type-auto">
+        <b>S5-Auto2</b> (should be downgraded to hint)<br>
+        If Auto1 is still open → downgrade worked (I didn't close it).
+      </div>
+    </div>
+  </div>
+
+  <div id="s5-result-a" style="margin-top:0.5rem;padding:0.4rem 0.75rem;border-radius:4px;font-size:0.85rem;"></div>
+  <div id="s5-status" style="font-size:0.85rem;color:#555;margin:0.25rem 0;min-height:1.2em;"></div>
+
+  <div id="s5-unrelated" popover="hint" class="type-hint">
+    <b>S5-Unrelated Hint</b><br>Auto2 should have closed when I appeared (it's in the hint stack).
+  </div>
+  <div id="s5-result-b" style="margin-top:0.5rem;padding:0.4rem 0.75rem;border-radius:4px;font-size:0.85rem;"></div>
+  <div id="log-s5" class="log-area"></div>
+</div>
+
+<!-- ============================================================
+     SCENARIO 6 — Extra: show during toggle is rejected
+     ============================================================ -->
+<div class="scenario">
+  <h2>Scenario 6 (Extra): Showing a popover during another's toggle is not allowed</h2>
+  <div class="rule">
+    Calling <code>showPopover()</code> inside a <code>beforetoggle</code> handler should throw
+    or be silently rejected.
+  </div>
+  <div class="buttons">
+    <button class="auto" onclick="testShowDuringShow()">Test: show during beforetoggle (open)</button>
+    <button class="hint" onclick="testShowDuringHide()">Test: show during beforetoggle (close)</button>
+    <button class="hide" onclick="closePop('s6-trigger'); closePop('s6-during')">Reset</button>
+  </div>
+  <div id="s6-result" style="margin-top:0.5rem;padding:0.4rem 0.75rem;border-radius:4px;font-size:0.85rem;"></div>
+  <div id="s6-trigger" popover="auto" class="type-auto">
+    <b>S6-Trigger</b><br>My <code>beforetoggle</code> tries to show the hint.
+  </div>
+  <div id="s6-during" popover="hint" class="type-hint">
+    <b>S6-During</b><br>I should NOT appear.
+  </div>
+  <div id="log-s6" class="log-area"></div>
+</div>
+
+<!-- ============================================================
+     SCENARIO 7 — Rule 2 nested: parent hint survives child hint
+     ============================================================ -->
+<div class="scenario">
+  <h2>Scenario 7 (Rule 2 nested): Parent hint is an ancestor — it survives when child hint shows</h2>
+  <div class="rule">
+    The inner hint is triggered from a button <em>inside</em> the outer hint, making outer an
+    ancestor of inner. When inner shows, only non-ancestor hints close — so outer stays.
+  </div>
+  <div class="buttons">
+    <button class="hint" onclick="showFrom(this,'s7-outer')">1. Click → open outer hint</button>
+    <button class="hide" onclick="closePop('s7-outer')">Reset</button>
+  </div>
+  <p style="font-size:0.85rem;color:#555;margin:0.25rem 0">
+    Then click the button <em>inside</em> the outer hint to open the inner.
+  </p>
+
+  <div id="s7-outer" popover="hint" class="type-hint">
+    <b>S7-Outer</b><br>I should stay visible when the inner hint appears.
+    <div class="nested-container">
+      <button class="hint" onclick="showFrom(this,'s7-inner')">
+        2. Click → inner hint (source = me, inside outer)
+      </button>
+    </div>
+    <div id="s7-inner" popover="hint" class="type-hint">
+      <b>S7-Inner</b> (child of outer)<br>The outer hint should still be visible.
+    </div>
+  </div>
+  <div id="log-s7" class="log-area"></div>
+</div>
+
+<!-- ============================================================
+     SCENARIO 8 — Mixed: auto + hint chain, sibling hints close each other
+     ============================================================ -->
+<div class="scenario">
+  <h2>Scenario 8 (Mixed): Auto with sibling hints — each new hint closes the previous</h2>
+  <div class="rule">
+    Auto contains two hint triggers. Hint A and Hint B are both children of the auto (siblings).
+    Showing Hint B closes Hint A (sibling, not ancestor). Auto stays throughout.
+    Finally, an external unrelated hint closes both Hint A/B but auto stays.
+  </div>
+  <div class="buttons">
+    <button class="auto" onclick="openPop('s8-auto')">1. Open auto</button>
+    <button class="hide" onclick="closePop('s8-auto')">Close auto</button>
+  </div>
+  <p style="font-size:0.85rem;color:#555;margin:0.25rem 0">
+    Then click the buttons inside the auto. Finally click the external unrelated hint button.
+  </p>
+
+  <div id="s8-auto" popover="auto" class="type-auto">
+    <b>S8-Auto</b><br>I stay open throughout hint operations.
+    <div class="nested-container">
+      <button class="hint" onclick="showFrom(this,'s8-hint-a')">
+        2. Click → Hint A (child of auto)
+      </button>
+      <button class="hint"
+              onmouseenter="showFrom(this,'s8-hint-b')"
+              onmouseleave="closePop('s8-hint-b')">
+        3. Hover → Hint B (child of auto, closes A)
+      </button>
+    </div>
+    <div id="s8-hint-a" popover="hint" class="type-hint">
+      <b>S8-Hint A</b><br>I close when Hint B appears (we're siblings). Auto stays.
+    </div>
+    <div id="s8-hint-b" popover="hint" class="type-hint">
+      <b>S8-Hint B</b><br>Hint A should have closed. Auto should still be visible.
+    </div>
+  </div>
+
+  <div class="buttons" style="margin-top:0.5rem">
+    <button class="hint" onclick="showFrom(this,'s8-unrelated-hint')">
+      4. Click → Unrelated hint (closes any open hint A/B, auto stays)
+    </button>
+  </div>
+  <div id="s8-unrelated-hint" popover="hint" class="type-hint">
+    <b>S8-Unrelated Hint</b><br>All child hints of auto should have closed. Auto should still be open.
+  </div>
+  <div id="log-s8" class="log-area"></div>
+</div>
+
+<script>
+  // ─── Core helpers ──────────────────────────────────────────────────────────
+
+  function getPopover(id) {
+    return document.getElementById(id);
+  }
+
+  // Open a popover without a source (for auto popovers opened by external buttons)
+  function openPop(id) {
+    const el = getPopover(id);
+    if (!el) return;
+    try { el.showPopover(); }
+    catch(e) { logToScenario(id, `ERROR opening #${id}: ${e.message}`, 'event'); }
+  }
+
+  // Show a popover with the given button element as source
+  // (button must be inside an open popover for the relationship to be established)
+  function showFrom(btn, id) {
+    const el = getPopover(id);
+    if (!el) return;
+    try { el.showPopover({ source: btn }); }
+    catch(e) { logToScenario(id, `ERROR showing #${id}: ${e.message}`, 'event'); }
+  }
+
+  function closePop(id) {
+    const el = getPopover(id);
+    if (!el) return;
+    try { el.hidePopover(); } catch(e) {}
+  }
+
+  function hideAll() {
+    document.querySelectorAll('[popover]').forEach(el => {
+      try { el.hidePopover(); } catch(e) {}
+    });
+  }
+
+  // ─── Logging ───────────────────────────────────────────────────────────────
+
+  const logMap = {
+    s1:'log-s1', s2:'log-s2', s3:'log-s3', s4:'log-s4',
+    s5:'log-s5', s6:'log-s6', s7:'log-s7', s8:'log-s8', s3b:'log-s3b',
+  };
+
+  function scenarioKey(id) {
+    const m = id.match(/^(s\d+[a-z]*)/);
+    return m ? m[1] : null;
+  }
+
+  function logToScenario(id, msg, type = 'event') {
+    const key = scenarioKey(id);
+    if (!key) return;
+    const logEl = document.getElementById(logMap[key]);
+    if (!logEl) return;
+    const line = document.createElement('div');
+    line.className = `log-${type}`;
+    line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+    logEl.appendChild(line);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  document.addEventListener('toggle', (e) => {
+    if (!e.target.hasAttribute('popover')) return;
+    const id = e.target.id;
+    if (!id || id.startsWith('probe-')) return;
+    const type = e.newState;
+    logToScenario(id, `#${id} → ${type}`, type === 'open' ? 'show' : 'hide');
+    updateStatusBar();
+  }, true);
+
+  document.addEventListener('beforetoggle', (e) => {
+    if (!e.target.hasAttribute('popover')) return;
+    const id = e.target.id;
+    if (!id || id.startsWith('probe-')) return;
+    logToScenario(id, `#${id} beforetoggle: ${e.oldState}→${e.newState}`, 'event');
+  }, true);
+
+  function updateStatusBar() {
+    const open = [...document.querySelectorAll('[popover]')]
+      .filter(el => el.matches(':popover-open') && el.id && !el.id.startsWith('probe-'))
+      .map(el => `#${el.id} (${el.getAttribute('popover')})`);
+    document.getElementById('visible-list').textContent =
+      open.length ? open.join(', ') : '(none)';
+  }
+
+  // ─── Scenario 5: imperative auto-inside-hint test ─────────────────────────
+
+  // ─── Scenario 5: downgrade detection ─────────────────────────────────────
+
+  let s5Timer = null;
+
+  function s5OpenAuto2(btn) {
+    const auto2 = document.getElementById('s5-auto2');
+    const auto1 = document.getElementById('s5-auto1');
+    const resultA = document.getElementById('s5-result-a');
+    const status  = document.getElementById('s5-status');
+    try {
+      auto2.showPopover({ source: btn });
+    } catch(e) {
+      resultA.textContent = `ERROR opening auto2: ${e.name}: ${e.message}`;
+      resultA.style.background = '#fff3cd';
+      return;
+    }
+    const auto1open = auto1.matches(':popover-open');
+    resultA.textContent = auto1open
+      ? 'Step 3 PASS (A): Auto2 opened and Auto1 stayed open → auto2 was downgraded to hint (did not close auto1).'
+      : 'Step 3 FAIL (A): Auto1 closed when auto2 appeared → auto2 behaved as a real auto (old-spec behavior).';
+    resultA.style.background = auto1open ? '#d4edda' : '#f8d7da';
+    logToScenario('s5-auto2', `auto1 ${auto1open ? 'survived' : 'closed'} — downgrade ${auto1open ? 'PASS' : 'FAIL'}`, 'event');
+
+    // Start timer: show unrelated hint after 4s (no click needed)
+    if (s5Timer) clearInterval(s5Timer);
+    let remaining = 4;
+    status.textContent = `Unrelated hint appears in ${remaining}s…`;
+    status.style.color = '#555';
+    s5Timer = setInterval(() => {
+      remaining--;
+      if (remaining > 0) {
+        status.textContent = `Unrelated hint appears in ${remaining}s…`;
+      } else {
+        clearInterval(s5Timer);
+        s5Timer = null;
+        openPop('s5-unrelated');
+        const auto2open = document.getElementById('s5-auto2').matches(':popover-open');
+        const resultB = document.getElementById('s5-result-b');
+        resultB.textContent = auto2open
+          ? 'Step 4 FAIL (B): auto2 still open — it is NOT in the hint stack (not downgraded).'
+          : 'Step 4 PASS (B): auto2 closed when unrelated hint appeared → auto2 was in the hint stack (downgraded).';
+        resultB.style.background = auto2open ? '#f8d7da' : '#d4edda';
+        status.textContent = '';
+        logToScenario('s5-unrelated', `auto2 ${auto2open ? 'survived (FAIL)' : 'closed (PASS)'} after unrelated hint`, 'event');
+      }
+    }, 1000);
+  }
+
+  function s5Reset() {
+    if (s5Timer) { clearInterval(s5Timer); s5Timer = null; }
+    ['s5-auto1','s5-hint','s5-auto2','s5-unrelated'].forEach(id => closePop(id));
+    ['s5-result-a','s5-result-b'].forEach(id => {
+      const el = document.getElementById(id);
+      el.textContent = ''; el.style.background = '';
+    });
+    const status = document.getElementById('s5-status');
+    status.textContent = ''; status.style.color = '';
+  }
+
+  // ─── Scenario 4: timer-based auto hide ────────────────────────────────────
+
+  let s4Timer = null;
+
+  function startS4Test(btn) {
+    clearS4();
+    openPop('s4-auto');
+    openPop('s4-hint');
+    const status = document.getElementById('s4-status');
+    let remaining = 4;
+    status.textContent = `Auto hides in ${remaining}s…`;
+    s4Timer = setInterval(() => {
+      remaining--;
+      if (remaining > 0) {
+        status.textContent = `Auto hides in ${remaining}s…`;
+      } else {
+        clearInterval(s4Timer);
+        s4Timer = null;
+        closePop('s4-auto');
+        const hintOpen = document.getElementById('s4-hint').matches(':popover-open');
+        status.textContent = hintOpen
+          ? 'PASS: auto closed, hint is still visible.'
+          : 'FAIL: auto closed and hint also closed.';
+        status.style.fontWeight = 'bold';
+        status.style.color = hintOpen ? '#155724' : '#721c24';
+      }
+    }, 1000);
+  }
+
+  function clearS4() {
+    if (s4Timer) { clearInterval(s4Timer); s4Timer = null; }
+    const status = document.getElementById('s4-status');
+    status.textContent = '';
+    status.style.fontWeight = '';
+    status.style.color = '';
+  }
+
+
+  // ─── Scenario 6: show during beforetoggle ─────────────────────────────────
+
+  function testShowDuringShow() {
+    const trigger = getPopover('s6-trigger');
+    const during  = getPopover('s6-during');
+    const result  = document.getElementById('s6-result');
+    result.style.background = ''; result.textContent = '';
+    function handler(e) {
+      if (e.newState !== 'open') return;
+      trigger.removeEventListener('beforetoggle', handler);
+      try {
+        during.showPopover();
+        result.textContent = 'FAIL: showPopover() during beforetoggle(open) succeeded.';
+        result.style.background = '#f8d7da';
+      } catch(err) {
+        result.textContent = `PASS: threw: "${err.message}"`;
+        result.style.background = '#d4edda';
+      }
+    }
+    trigger.addEventListener('beforetoggle', handler);
+    try { trigger.showPopover(); } catch(e) {}
+  }
+
+  function testShowDuringHide() {
+    const trigger = getPopover('s6-trigger');
+    const during  = getPopover('s6-during');
+    const result  = document.getElementById('s6-result');
+    result.style.background = ''; result.textContent = '';
+    try { trigger.showPopover(); } catch(e) {}
+    function handler(e) {
+      if (e.newState !== 'closed') return;
+      trigger.removeEventListener('beforetoggle', handler);
+      try {
+        during.showPopover();
+        result.textContent = 'FAIL: showPopover() during beforetoggle(close) succeeded.';
+        result.style.background = '#f8d7da';
+      } catch(err) {
+        result.textContent = `PASS: threw: "${err.message}"`;
+        result.style.background = '#d4edda';
+      }
+    }
+    trigger.addEventListener('beforetoggle', handler);
+    try { trigger.hidePopover(); } catch(e) {}
+  }
+</script>
+</body>
+</html>
