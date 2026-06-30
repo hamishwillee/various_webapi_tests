@@ -53,6 +53,31 @@
       button.primary:hover {
         background: #0d47a1;
       }
+      .crash-url {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin: 0.5rem 0;
+      }
+      .crash-url code {
+        background: #f4f4f4;
+        border: 1px solid #ccc;
+        padding: 0.3rem 0.6rem;
+        font-size: 1rem;
+        border-radius: 3px;
+        user-select: all;
+      }
+      button.copy {
+        padding: 0.25rem 0.75rem;
+        font-size: 0.85rem;
+        cursor: pointer;
+        border: 1px solid #999;
+        border-radius: 3px;
+        background: #fff;
+      }
+      button.copy:hover {
+        background: #eee;
+      }
       input[type='text'] {
         padding: 0.4rem;
         font-size: 0.95rem;
@@ -95,10 +120,9 @@
       back. Watch the <strong>report-server terminal</strong> for incoming reports.
       <br /><br />
       <ul style="margin: 0.25rem 0 0 1.25rem; padding: 0;">
-        <li>Firefox supports crash reports since FF130, but this test cannot trigger them. As of FF150 the <code>window.crashReport</code> interface is not supported.</li>
-        <li>The page-unresponsive test works on Chrome only.</li>
+        <li>Firefox supports crash reports since FF130. The address-bar method below works on Firefox Nightly. As of FF150 the <code>window.crashReport</code> interface is not supported.</li>
+        <li>The page-unresponsive JavaScript test works on Chrome only.</li>
         <li>OOM tests not supported — attempts to allocate memory normally and via WASM are handled without crashing.</li>
-        <li>Address bar crash URLs such as <code>chrome://kill</code> (Chrome) and <code>about:crashcontent</code> (Firefox) do not trigger crash reports.</li>
       </ul>
     </div>
 
@@ -125,7 +149,23 @@
         Keep the report-server terminal visible so you can see the report arrive after you reload.
       </div>
 
-      <h3>Via JavaScript</h3>
+      <h3>Via browser address bar</h3>
+      <p>
+        Copy one of the URLs below, paste it into the address bar of <strong>this tab</strong>,
+        and press Enter. The tab crashes immediately and a crash report is queued for delivery.
+      </p>
+      <div class="crash-url">
+        <code id="url-chrome">chrome://crash</code>
+        <button class="copy" onclick="copyUrl('url-chrome', this)">Copy</button>
+        <span>Chrome</span>
+      </div>
+      <div class="crash-url">
+        <code id="url-firefox">about:crashcontent</code>
+        <button class="copy" onclick="copyUrl('url-firefox', this)">Copy</button>
+        <span>Firefox Nightly</span>
+      </div>
+
+      <h3>Via JavaScript (Chrome only)</h3>
       <button class="danger" onclick="triggerUnresponsive()">Force unresponsive</button>
       <p>
         Freezes the main thread. The browser will show a "Page Unresponsive" or similar dialog
@@ -174,6 +214,16 @@
         if (cls) span.className = cls;
         span.textContent = msg + '\n';
         logEl.appendChild(span);
+      }
+
+      // ── Copy URL helper ───────────────────────────────────────────
+      function copyUrl(id, btn) {
+        const text = document.getElementById(id).textContent;
+        navigator.clipboard.writeText(text).then(() => {
+          const orig = btn.textContent;
+          btn.textContent = 'Copied!';
+          setTimeout(() => { btn.textContent = orig; }, 1500);
+        });
       }
 
       // ── window.crashReport context ────────────────────────────────
